@@ -2,15 +2,16 @@ package dmExport
 
 import (
 	"context"
-	"gitee.com/i-Things/share/caches"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/domain/schema"
-	"gitee.com/i-Things/share/eventBus"
-	"gitee.com/i-Things/things/service/dmsvr/client/devicemanage"
-	"gitee.com/i-Things/things/service/dmsvr/client/productmanage"
-	"gitee.com/i-Things/things/service/dmsvr/client/userdevice"
-	"gitee.com/i-Things/things/service/dmsvr/internal/domain/userShared"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+
+	"gitee.com/unitedrhino/share/caches"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/domain/schema"
+	"gitee.com/unitedrhino/share/eventBus"
+	"gitee.com/unitedrhino/things/service/dmsvr/client/devicemanage"
+	"gitee.com/unitedrhino/things/service/dmsvr/client/productmanage"
+	"gitee.com/unitedrhino/things/service/dmsvr/client/userdevice"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/domain/userShared"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 )
 
 type ProductCacheT = *caches.Cache[dm.ProductInfo, string]
@@ -62,17 +63,17 @@ func NewUserShareCache(devM userdevice.UserDevice, fastEvent *eventBus.FastEvent
 	})
 }
 
-type SchemaCacheT = *caches.Cache[schema.Model, string]
+type SchemaCacheT = *caches.Cache[schema.Model, devices.Core]
 
 func NewSchemaInfoCache(pm productmanage.ProductManage, fastEvent *eventBus.FastEvent) (SchemaCacheT, error) {
-	return caches.NewCache(caches.CacheConfig[schema.Model, string]{
+	return caches.NewCache(caches.CacheConfig[schema.Model, devices.Core]{
 		KeyType:   eventBus.ServerCacheKeyDmSchema,
 		FastEvent: fastEvent,
-		Fmt: func(ctx context.Context, key string, data *schema.Model) {
+		Fmt: func(ctx context.Context, key devices.Core, data *schema.Model) {
 			data.ValidateWithFmt()
 		},
-		GetData: func(ctx context.Context, key string) (*schema.Model, error) {
-			info, err := pm.ProductSchemaTslRead(ctx, &dm.ProductSchemaTslReadReq{ProductID: key})
+		GetData: func(ctx context.Context, key devices.Core) (*schema.Model, error) {
+			info, err := pm.ProductSchemaTslRead(ctx, &dm.ProductSchemaTslReadReq{ProductID: key.ProductID})
 			if err != nil {
 				return nil, err
 			}

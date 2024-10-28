@@ -2,44 +2,45 @@ package svc
 
 import (
 	"context"
-	"gitee.com/i-Things/core/service/syssvr/client/areamanage"
-	"gitee.com/i-Things/core/service/syssvr/client/common"
-	"gitee.com/i-Things/core/service/syssvr/client/datamanage"
-	"gitee.com/i-Things/core/service/syssvr/client/projectmanage"
-	"gitee.com/i-Things/core/service/syssvr/client/tenantmanage"
-	"gitee.com/i-Things/core/service/syssvr/client/usermanage"
-	"gitee.com/i-Things/core/service/syssvr/sysExport"
-	"gitee.com/i-Things/core/service/timed/timedjobsvr/client/timedmanage"
-	"gitee.com/i-Things/share/ctxs"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/domain/deviceMsg/msgThing"
-	ws "gitee.com/i-Things/share/websocket"
-	"gitee.com/i-Things/things/service/dmsvr/internal/domain/deviceLog"
-	"gitee.com/i-Things/things/service/dmsvr/internal/domain/userShared"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/cache"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/event/publish/pubApp"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/event/publish/pubDev"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/relationDB"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/tdengine/schemaDataRepo"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/tdengine/sendLogRepo"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/tdengine/statusLogRepo"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
-	"github.com/zeromicro/go-zero/core/stores/kv"
-	"github.com/zeromicro/go-zero/zrpc"
 	"os"
 	"time"
 
-	"gitee.com/i-Things/share/stores"
+	"gitee.com/unitedrhino/core/service/syssvr/client/areamanage"
+	"gitee.com/unitedrhino/core/service/syssvr/client/common"
+	"gitee.com/unitedrhino/core/service/syssvr/client/datamanage"
+	"gitee.com/unitedrhino/core/service/syssvr/client/projectmanage"
+	"gitee.com/unitedrhino/core/service/syssvr/client/tenantmanage"
+	"gitee.com/unitedrhino/core/service/syssvr/client/usermanage"
+	"gitee.com/unitedrhino/core/service/syssvr/sysExport"
+	"gitee.com/unitedrhino/core/service/timed/timedjobsvr/client/timedmanage"
+	"gitee.com/unitedrhino/share/ctxs"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/domain/deviceMsg/msgThing"
+	ws "gitee.com/unitedrhino/share/websocket"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/domain/deviceLog"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/domain/userShared"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/cache"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/event/publish/pubApp"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/event/publish/pubDev"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/relationDB"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/tdengine/schemaDataRepo"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/tdengine/sendLogRepo"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/tdengine/statusLogRepo"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
+	"github.com/zeromicro/go-zero/core/stores/kv"
+	"github.com/zeromicro/go-zero/zrpc"
 
-	"gitee.com/i-Things/share/caches"
+	"gitee.com/unitedrhino/share/stores"
 
-	"gitee.com/i-Things/share/domain/schema"
-	"gitee.com/i-Things/share/eventBus"
-	"gitee.com/i-Things/share/oss"
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/service/dmsvr/internal/config"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/tdengine/hubLogRepo"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/tdengine/sdkLogRepo"
+	"gitee.com/unitedrhino/share/caches"
+
+	"gitee.com/unitedrhino/share/domain/schema"
+	"gitee.com/unitedrhino/share/eventBus"
+	"gitee.com/unitedrhino/share/oss"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/config"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/tdengine/hubLogRepo"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/tdengine/sdkLogRepo"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -49,32 +50,33 @@ type ServiceContext struct {
 	PubDev pubDev.PubDev
 	PubApp pubApp.PubApp
 
-	OssClient       *oss.Client
-	TimedM          timedmanage.TimedManage
-	SchemaRepo      *caches.Cache[schema.Model, string]
-	SchemaManaRepo  msgThing.SchemaDataRepo
-	HubLogRepo      deviceLog.HubRepo
-	StatusRepo      deviceLog.StatusRepo
-	SendRepo        deviceLog.SendRepo
-	SDKLogRepo      deviceLog.SDKRepo
-	Cache           kv.Store
-	DeviceStatus    *cache.DeviceStatus
-	FastEvent       *eventBus.FastEvent
-	AreaM           areamanage.AreaManage
-	UserM           usermanage.UserManage
-	DataM           datamanage.DataManage
-	ProjectM        projectmanage.ProjectManage
-	ProductCache    *caches.Cache[dm.ProductInfo, string]
-	DeviceCache     *caches.Cache[dm.DeviceInfo, devices.Core]
-	UserDeviceShare *caches.Cache[dm.UserDeviceShareInfo, userShared.UserShareKey]
-	TenantCache     sysExport.TenantCacheT
-	ProjectCache    sysExport.ProjectCacheT
-	AreaCache       sysExport.AreaCacheT
-	WebHook         *sysExport.Webhook
-	Slot            sysExport.SlotCacheT
-	UserSubscribe   *ws.UserSubscribe
-	GatewayCanBind  *cache.GatewayCanBind
-	NodeID          int64
+	OssClient            *oss.Client
+	TimedM               timedmanage.TimedManage
+	SchemaRepo           *caches.Cache[schema.Model, devices.Core]
+	SchemaManaRepo       msgThing.SchemaDataRepo
+	HubLogRepo           deviceLog.HubRepo
+	StatusRepo           deviceLog.StatusRepo
+	SendRepo             deviceLog.SendRepo
+	SDKLogRepo           deviceLog.SDKRepo
+	Cache                kv.Store
+	DeviceStatus         *cache.DeviceStatus
+	FastEvent            *eventBus.FastEvent
+	AreaM                areamanage.AreaManage
+	UserM                usermanage.UserManage
+	DataM                datamanage.DataManage
+	ProjectM             projectmanage.ProjectManage
+	ProductCache         *caches.Cache[dm.ProductInfo, string]
+	DeviceCache          *caches.Cache[dm.DeviceInfo, devices.Core]
+	UserDeviceShare      *caches.Cache[dm.UserDeviceShareInfo, userShared.UserShareKey]
+	UserMultiDeviceShare *caches.Cache[dm.UserDeviceShareMultiInfo, string]
+	TenantCache          sysExport.TenantCacheT
+	ProjectCache         sysExport.ProjectCacheT
+	AreaCache            sysExport.AreaCacheT
+	WebHook              *sysExport.Webhook
+	Slot                 sysExport.SlotCacheT
+	UserSubscribe        *ws.UserSubscribe
+	GatewayCanBind       *cache.GatewayCanBind
+	NodeID               int64
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -105,20 +107,20 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	serverMsg, err := eventBus.NewFastEvent(c.Event, c.Name, nodeID)
 	logx.Must(err)
 
-	ccSchemaR, err := caches.NewCache(caches.CacheConfig[schema.Model, string]{
+	ccSchemaR, err := caches.NewCache(caches.CacheConfig[schema.Model, devices.Core]{
 		KeyType:   eventBus.ServerCacheKeyDmSchema,
 		FastEvent: serverMsg,
-		GetData: func(ctx context.Context, key string) (*schema.Model, error) {
+		GetData: func(ctx context.Context, key devices.Core) (*schema.Model, error) {
 			db := relationDB.NewProductSchemaRepo(ctx)
-			dbSchemas, err := db.FindByFilter(ctx, relationDB.ProductSchemaFilter{ProductID: key}, nil)
+			dbSchemas, err := db.FindByFilter(ctx, relationDB.ProductSchemaFilter{ProductID: key.ProductID}, nil)
 			if err != nil {
 				return nil, err
 			}
-			schemaModel := relationDB.ToSchemaDo(key, dbSchemas)
+			schemaModel := relationDB.ToSchemaDo(key.ProductID, dbSchemas)
 			schemaModel.ValidateWithFmt()
 			return schemaModel, nil
 		},
-		Fmt: func(ctx context.Context, key string, data *schema.Model) {
+		Fmt: func(ctx context.Context, key devices.Core, data *schema.Model) {
 			data.ValidateWithFmt()
 		},
 		ExpireTime: 10 * time.Minute,

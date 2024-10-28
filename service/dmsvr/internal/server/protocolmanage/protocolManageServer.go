@@ -7,9 +7,9 @@ package server
 import (
 	"context"
 
-	"gitee.com/i-Things/things/service/dmsvr/internal/logic/protocolmanage"
-	"gitee.com/i-Things/things/service/dmsvr/internal/svc"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/logic/protocolmanage"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/svc"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 )
 
 type ProtocolManageServer struct {
@@ -51,4 +51,20 @@ func (s *ProtocolManageServer) ProtocolInfoUpdate(ctx context.Context, in *dm.Pr
 func (s *ProtocolManageServer) ProtocolInfoDelete(ctx context.Context, in *dm.WithID) (*dm.Empty, error) {
 	l := protocolmanagelogic.NewProtocolInfoDeleteLogic(ctx, s.svcCtx)
 	return l.ProtocolInfoDelete(in)
+}
+
+// 更新服务状态,只给服务调用
+func (s *ProtocolManageServer) ProtocolServiceUpdate(ctx context.Context, in *dm.ProtocolService) (*dm.Empty, error) {
+	l := protocolmanagelogic.NewProtocolServiceUpdateLogic(ctx, s.svcCtx)
+	return l.ProtocolServiceUpdate(in)
+}
+
+func (s *ProtocolManageServer) ProtocolServiceDelete(ctx context.Context, in *dm.WithID) (*dm.Empty, error) {
+	l := protocolmanagelogic.NewProtocolServiceDeleteLogic(ctx, s.svcCtx)
+	return l.ProtocolServiceDelete(in)
+}
+
+func (s *ProtocolManageServer) ProtocolServiceIndex(ctx context.Context, in *dm.ProtocolServiceIndexReq) (*dm.ProtocolServiceIndexResp, error) {
+	l := protocolmanagelogic.NewProtocolServiceIndexLogic(ctx, s.svcCtx)
+	return l.ProtocolServiceIndex(in)
 }

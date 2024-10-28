@@ -3,13 +3,13 @@ package relationDB
 import (
 	"context"
 	"database/sql"
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/domain/schema"
-	"gitee.com/i-Things/share/stores"
-	"gitee.com/i-Things/things/service/dmsvr/internal/domain/deviceLog"
-	"gitee.com/i-Things/things/service/dmsvr/internal/domain/productCustom"
-	"gitee.com/i-Things/things/service/dmsvr/internal/domain/protocol"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/domain/schema"
+	"gitee.com/unitedrhino/share/stores"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/domain/deviceLog"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/domain/productCustom"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/domain/protocol"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 	"time"
@@ -235,6 +235,19 @@ func (m *DmProtocolInfo) TableName() string {
 	return "dm_protocol_info"
 }
 
+type DmProtocolService struct {
+	ID     int64  `gorm:"column:id;type:bigint;primary_key;AUTO_INCREMENT"`
+	Code   string `gorm:"column:code;uniqueIndex:pc;type:varchar(100);default:iThings"` //
+	Ip     string `gorm:"column:ip;uniqueIndex:pc;type:varchar(100);not null"`          //
+	Port   int64  `gorm:"column:port;uniqueIndex:pc;type:varchar(200)"`                 //
+	Status int64  `gorm:"column:status;type:bigint;default:2"`
+	stores.NoDelTime
+}
+
+func (m *DmProtocolService) TableName() string {
+	return "dm_protocol_service"
+}
+
 // 产品自定义协议表
 type DmProductCustom struct {
 	ID              int64                        `gorm:"column:id;type:bigint;primary_key;AUTO_INCREMENT"`
@@ -264,6 +277,21 @@ type DmProductSchema struct {
 
 func (m *DmProductSchema) TableName() string {
 	return "dm_product_schema"
+}
+
+// 产品物模型表
+type DmDeviceSchema struct {
+	ID         int64  `gorm:"column:id;type:bigint;primary_key;AUTO_INCREMENT"`
+	ProductID  string `gorm:"column:product_id;uniqueIndex:identifier;index:product_id_type;type:varchar(100);NOT NULL"`  // 产品id
+	DeviceName string `gorm:"column:device_name;uniqueIndex:identifier;index:product_id_type;type:varchar(100);NOT NULL"` // 设备名
+	DmSchemaCore
+	stores.NoDelTime
+	DeletedTime stores.DeletedTime `gorm:"column:deleted_time;default:0;uniqueIndex:identifier"`
+	ProductInfo *DmProductInfo     `gorm:"foreignKey:ProductID;references:ProductID"`
+}
+
+func (m *DmDeviceSchema) TableName() string {
+	return "dm_device_schema"
 }
 
 type DmSchemaCore struct {
@@ -371,12 +399,12 @@ func (m *DmProductRemoteConfig) TableName() string {
 
 // 设备影子表
 type DmDeviceShadow struct {
-	ID                int64      `gorm:"column:id;type:BIGINT;primary_key;AUTO_INCREMENT"`
-	ProductID         string     `gorm:"column:product_id;uniqueIndex:pi_dn_di;type:varchar(100);NOT NULL"`
-	DeviceName        string     `gorm:"column:device_name;uniqueIndex:pi_dn_di;type:VARCHAR(100);NOT NULL"`
-	DataID            string     `gorm:"column:data_id;uniqueIndex:pi_dn_di;type:VARCHAR(100);NOT NULL"`
-	Value             string     `gorm:"column:value;type:VARCHAR(100);default:NULL"`
-	UpdatedDeviceTime *time.Time `gorm:"column:updated_device_time;default:NULL"`
+	ID                int64        `gorm:"column:id;type:BIGINT;primary_key;AUTO_INCREMENT"`
+	ProductID         string       `gorm:"column:product_id;uniqueIndex:pi_dn_di;type:varchar(100);NOT NULL"`
+	DeviceName        string       `gorm:"column:device_name;uniqueIndex:pi_dn_di;type:VARCHAR(100);NOT NULL"`
+	DataID            string       `gorm:"column:data_id;uniqueIndex:pi_dn_di;type:VARCHAR(100);NOT NULL"`
+	Value             string       `gorm:"column:value;type:VARCHAR(100);default:NULL"`
+	UpdatedDeviceTime sql.NullTime `gorm:"column:updated_device_time;"`
 	stores.OnlyTime
 }
 

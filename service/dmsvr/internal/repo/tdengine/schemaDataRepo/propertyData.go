@@ -5,19 +5,21 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"gitee.com/i-Things/share/ctxs"
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/share/domain/deviceMsg/msgThing"
-	"gitee.com/i-Things/share/domain/schema"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/stores"
-	sq "gitee.com/i-Things/squirrel"
+	"gitee.com/unitedrhino/share/ctxs"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/domain/deviceMsg/msgThing"
+	"gitee.com/unitedrhino/share/domain/schema"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/stores"
+	sq "gitee.com/unitedrhino/squirrel"
 	"github.com/zeromicro/go-zero/core/logx"
 	"time"
 )
 
-func (d *DeviceDataRepo) InsertPropertyData(ctx context.Context, t *schema.Property, productID string, deviceName string, property *msgThing.Param, timestamp time.Time) error {
-	sql, args, err := d.GenInsertPropertySql(ctx, t, productID, deviceName, property, timestamp)
+func (d *DeviceDataRepo) InsertPropertyData(ctx context.Context, t *schema.Property, productID string, deviceName string,
+	property *msgThing.Param, timestamp time.Time, optional msgThing.Optional) error {
+	sql, args, err := d.GenInsertPropertySql(ctx, t, productID, deviceName, property, timestamp, optional)
 	if err != nil {
 		return err
 	}
@@ -25,7 +27,8 @@ func (d *DeviceDataRepo) InsertPropertyData(ctx context.Context, t *schema.Prope
 	return nil
 }
 
-func (d *DeviceDataRepo) GenInsertPropertySql(ctx context.Context, p *schema.Property, productID string, deviceName string, property *msgThing.Param, timestamp time.Time) (sql string, args []any, err error) {
+func (d *DeviceDataRepo) GenInsertPropertySql(ctx context.Context, p *schema.Property, productID string, deviceName string,
+	property *msgThing.Param, timestamp time.Time, optional msgThing.Optional) (sql string, args []any, err error) {
 	var ars = map[string]any{}
 	switch property.Define.Type {
 	case schema.DataTypeArray:
@@ -95,7 +98,7 @@ func (d *DeviceDataRepo) GenInsertPropertySql(ctx context.Context, p *schema.Pro
 			args = append(args, timestamp, param)
 		}
 	}
-	ctxs.GoNewCtx(ctx, func(ctx context.Context) {
+	f := func(ctx context.Context) {
 		log := logx.WithContext(ctx)
 		for k, v := range ars {
 			var data = msgThing.PropertyData{
@@ -129,7 +132,13 @@ func (d *DeviceDataRepo) GenInsertPropertySql(ctx context.Context, p *schema.Pro
 				log.Error(err)
 			}
 		}
-	})
+	}
+	if !optional.Sync {
+		ctxs.GoNewCtx(ctx, f)
+	} else {
+		f(ctx)
+	}
+
 	return
 }
 
@@ -168,7 +177,7 @@ func (d *DeviceDataRepo) GetLatestPropertyDataByID(ctx context.Context, p *schem
 
 }
 
-func (d *DeviceDataRepo) InsertPropertiesData(ctx context.Context, t *schema.Model, productID string, deviceName string, params map[string]msgThing.Param, timestamp time.Time) error {
+func (d *DeviceDataRepo) InsertPropertiesData(ctx context.Context, t *schema.Model, productID string, deviceName string, params map[string]msgThing.Param, timestamp time.Time, optional msgThing.Optional) error {
 	var startTime = time.Now()
 	defer func() {
 		logx.WithContext(ctx).WithDuration(time.Now().Sub(startTime)).
@@ -178,7 +187,7 @@ func (d *DeviceDataRepo) InsertPropertiesData(ctx context.Context, t *schema.Mod
 		p := t.Property[param.Identifier]
 		//入库
 		param.Identifier = identifier
-		sql1, args1, err := d.GenInsertPropertySql(ctx, p, productID, deviceName, &param, timestamp)
+		sql1, args1, err := d.GenInsertPropertySql(ctx, p, productID, deviceName, &param, timestamp, optional)
 		if err != nil {
 			return errors.Database.AddDetailf(
 				"DeviceDataRepo.InsertPropertiesData.InsertPropertyData identifier:%v param:%v err:%v",
@@ -243,7 +252,11 @@ func (d *DeviceDataRepo) GetPropertyDataByID(
 func (d *DeviceDataRepo) getPropertyArgFuncSelect(
 	ctx context.Context,
 	filter msgThing.FilterOpt) (sq.SelectBuilder, error) {
-	schemaModel, err := d.getSchemaModel(ctx, filter.ProductID)
+	gd := devices.Core{ProductID: filter.ProductID}
+	if len(filter.DeviceNames) == 1 {
+		gd.DeviceName = filter.DeviceNames[0]
+	}
+	schemaModel, err := d.getSchemaModel(ctx, gd)
 	if err != nil {
 		return sq.SelectBuilder{}, err
 	}

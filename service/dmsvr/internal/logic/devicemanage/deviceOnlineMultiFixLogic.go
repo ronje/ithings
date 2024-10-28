@@ -2,21 +2,21 @@ package devicemanagelogic
 
 import (
 	"context"
-	"gitee.com/i-Things/share/ctxs"
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/domain/application"
-	"gitee.com/i-Things/share/domain/deviceAuth"
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/sdk/service/protocol"
-	"gitee.com/i-Things/things/service/dmsvr/internal/domain/deviceLog"
-	"gitee.com/i-Things/things/service/dmsvr/internal/domain/deviceStatus"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/relationDB"
+	"gitee.com/unitedrhino/share/ctxs"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/domain/application"
+	"gitee.com/unitedrhino/share/domain/deviceAuth"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/sdk/service/protocol"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/domain/deviceLog"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/domain/deviceStatus"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/relationDB"
 	"github.com/spf13/cast"
 	"time"
 
-	"gitee.com/i-Things/things/service/dmsvr/internal/svc"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/svc"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -138,25 +138,27 @@ func HandleOnlineFix(ctx context.Context, svcCtx *svc.ServiceContext, insertList
 			}
 			protocol.UpdateDeviceActivity(ctx, dev)
 		} else {
-			if di.DeviceType == def.DeviceTypeGateway { //如果是网关类型下线,则需要把子设备全部下线
-				subDevs, err := relationDB.NewGatewayDeviceRepo(ctx).FindByFilter(ctx,
-					relationDB.GatewayDeviceFilter{Gateway: &dev}, nil)
-				if err != nil {
-					log.Error(err)
-				} else {
-					for _, v := range subDevs {
-						subDeviceInsert = append(subDeviceInsert, &deviceStatus.ConnectMsg{Action: msg.Action,
-							Device: devices.Core{ProductID: v.ProductID, DeviceName: v.DeviceName}})
+			if !utils.SliceIn(msg.Reason, "takeovered", "takenover", "discard", "discarded") { //连接还在的时候被别人顶了,忽略这种下线
+				if di.DeviceType == def.DeviceTypeGateway { //如果是网关类型下线,则需要把子设备全部下线
+					subDevs, err := relationDB.NewGatewayDeviceRepo(ctx).FindByFilter(ctx,
+						relationDB.GatewayDeviceFilter{Gateway: &dev}, nil)
+					if err != nil {
+						log.Error(err)
+					} else {
+						for _, v := range subDevs {
+							subDeviceInsert = append(subDeviceInsert, &deviceStatus.ConnectMsg{Action: msg.Action,
+								Device: devices.Core{ProductID: v.ProductID, DeviceName: v.DeviceName}})
+						}
 					}
 				}
+				OffLineDevices = append(OffLineDevices, &dev)
+				err = svcCtx.PubApp.DeviceStatusDisConnected(ctx, appMsg)
+				if err != nil {
+					log.Errorf("%s.pubApp productID:%v deviceName:%v err:%v",
+						utils.FuncName(), ld.ProductID, ld.DeviceName, err)
+				}
+				protocol.DeleteDeviceActivity(ctx, dev)
 			}
-			OffLineDevices = append(OffLineDevices, &dev)
-			err = svcCtx.PubApp.DeviceStatusDisConnected(ctx, appMsg)
-			if err != nil {
-				log.Errorf("%s.pubApp productID:%v deviceName:%v err:%v",
-					utils.FuncName(), ld.ProductID, ld.DeviceName, err)
-			}
-			protocol.DeleteDeviceActivity(ctx, dev)
 		}
 		err = svcCtx.StatusRepo.Insert(ctx, &deviceLog.Status{
 			ProductID:  ld.ProductID,

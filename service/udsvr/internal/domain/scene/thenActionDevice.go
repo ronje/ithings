@@ -3,16 +3,16 @@ package scene
 import (
 	"context"
 	"encoding/json"
-	"gitee.com/i-Things/share/ctxs"
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/domain/schema"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/utils"
-	deviceinteract "gitee.com/i-Things/things/service/dmsvr/client/deviceinteract"
-	devicemanage "gitee.com/i-Things/things/service/dmsvr/client/devicemanage"
-	"gitee.com/i-Things/things/service/dmsvr/dmExport"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+	"gitee.com/unitedrhino/share/ctxs"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/domain/schema"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/utils"
+	deviceinteract "gitee.com/unitedrhino/things/service/dmsvr/client/deviceinteract"
+	devicemanage "gitee.com/unitedrhino/things/service/dmsvr/client/devicemanage"
+	"gitee.com/unitedrhino/things/service/dmsvr/dmExport"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 	"github.com/zeromicro/go-zero/core/logx"
 	"strings"
 	"sync"
@@ -114,7 +114,7 @@ func (a *ActionDevice) Validate(repo CheckRepo) error {
 	if repo.Info.DeviceMode != DeviceModeSingle {
 		a.DeviceAlias = GetDeviceAlias(repo.Ctx, repo.DeviceCache, a.ProductID, a.DeviceName)
 	}
-	v, err := repo.ProductSchemaCache.GetData(repo.Ctx, a.ProductID)
+	v, err := repo.SchemaCache.GetData(repo.Ctx, devices.Core{ProductID: a.ProductID, DeviceName: a.DeviceName})
 	if err != nil {
 		return err
 	}

@@ -3,23 +3,23 @@ package deviceinteractlogic
 import (
 	"context"
 	"encoding/json"
-	"gitee.com/i-Things/core/service/timed/timedjobsvr/pb/timedjob"
-	"gitee.com/i-Things/share/ctxs"
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/domain/deviceMsg"
-	"gitee.com/i-Things/share/domain/deviceMsg/msgThing"
-	"gitee.com/i-Things/share/domain/schema"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/events/topics"
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/service/dmsvr/internal/domain/deviceLog"
-	"gitee.com/i-Things/things/service/dmsvr/internal/logic"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/cache"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+	"gitee.com/unitedrhino/core/service/timed/timedjobsvr/pb/timedjob"
+	"gitee.com/unitedrhino/share/ctxs"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/domain/deviceMsg"
+	"gitee.com/unitedrhino/share/domain/deviceMsg/msgThing"
+	"gitee.com/unitedrhino/share/domain/schema"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/events/topics"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/domain/deviceLog"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/logic"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/cache"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 	"time"
 
-	"gitee.com/i-Things/things/service/dmsvr/internal/svc"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -37,9 +37,9 @@ func NewActionSendLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Action
 		Logger: logx.WithContext(ctx),
 	}
 }
-func (l *ActionSendLogic) initMsg(productID string) error {
+func (l *ActionSendLogic) initMsg(dev devices.Core) error {
 	var err error
-	l.schema, err = l.svcCtx.SchemaRepo.GetData(l.ctx, productID)
+	l.schema, err = l.svcCtx.SchemaRepo.GetData(l.ctx, dev)
 	if err != nil {
 		return errors.System.AddDetail(err)
 	}
@@ -64,7 +64,7 @@ func (l *ActionSendLogic) ActionSend(in *dm.ActionSendReq) (ret *dm.ActionSendRe
 		return nil, err
 	}
 
-	err = l.initMsg(in.ProductID)
+	err = l.initMsg(devices.Core{ProductID: in.ProductID, DeviceName: in.DeviceName})
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func (l *ActionSendLogic) ActionSend(in *dm.ActionSendReq) (ret *dm.ActionSendRe
 		if in.Option != nil {
 			payload, _ := json.Marshal(reqMsg)
 			_, err := l.svcCtx.TimedM.TaskSend(l.ctx, &timedjob.TaskSendReq{
-				GroupCode: def.TimedIThingsQueueGroupCode,
+				GroupCode: def.TimedUnitedRhinoQueueGroupCode,
 				Code:      "disvr-action-check-delay",
 				Option: &timedjob.TaskSendOption{
 					ProcessIn: in.Option.RequestTimeout,

@@ -3,14 +3,14 @@ package auth5
 import (
 	"context"
 	"encoding/base64"
-	"gitee.com/i-Things/share/ctxs"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/things/service/apisvr/internal/logic/things/device"
-	"gitee.com/i-Things/things/service/dgsvr/pb/dg"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+	"gitee.com/unitedrhino/share/ctxs"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/things/service/apisvr/internal/logic/things/device"
+	"gitee.com/unitedrhino/things/service/dgsvr/pb/dg"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 
-	"gitee.com/i-Things/things/service/apisvr/internal/svc"
-	"gitee.com/i-Things/things/service/apisvr/internal/types"
+	"gitee.com/unitedrhino/things/service/apisvr/internal/svc"
+	"gitee.com/unitedrhino/things/service/apisvr/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -55,13 +55,13 @@ func (l *LoginLogic) Login(req *types.DeviceAuth5LoginReq) (resp *types.DeviceAu
 		}, nil
 	}
 	l.ctx = ctxs.WithRoot(l.ctx)
-	_, err = l.svcCtx.DeviceA.LoginAuth(l.ctx, &dg.LoginAuthReq{Username: req.Username, //用户名
+	_, er := l.svcCtx.DeviceA.LoginAuth(l.ctx, &dg.LoginAuthReq{Username: req.Username, //用户名
 		Password:    req.Password, //密码
 		ClientID:    req.ClientID, //clientID
 		Ip:          req.Ip,       //访问的ip地址
 		Certificate: cert,         //客户端证书
 	})
-	if err == nil {
+	if er == nil {
 		return &types.DeviceAuth5LoginResp{
 			Result:      "allow",
 			IsSuperuser: false,
@@ -75,6 +75,7 @@ func (l *LoginLogic) Login(req *types.DeviceAuth5LoginReq) (resp *types.DeviceAu
 		Certificate: req.Certificate,
 	}, cert)
 	if err != nil {
+		l.Errorf("auth5Login iThings req:%v err:%v third err:%v", req, er, err)
 		return &types.DeviceAuth5LoginResp{Result: "deny"}, nil
 	}
 	return &types.DeviceAuth5LoginResp{

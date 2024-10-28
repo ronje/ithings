@@ -3,22 +3,23 @@ package protocol
 import (
 	"context"
 	"fmt"
-	"gitee.com/i-Things/core/service/timed/timedjobsvr/client/timedmanage"
-	"gitee.com/i-Things/share/conf"
-	"gitee.com/i-Things/share/ctxs"
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/eventBus"
-	"gitee.com/i-Things/share/events/topics"
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/service/dmsvr/client/deviceinteract"
-	"gitee.com/i-Things/things/service/dmsvr/client/devicemanage"
-	"gitee.com/i-Things/things/service/dmsvr/client/productmanage"
-	"gitee.com/i-Things/things/service/dmsvr/client/protocolmanage"
-	"gitee.com/i-Things/things/service/dmsvr/dmExport"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+	"gitee.com/unitedrhino/core/service/timed/timedjobsvr/client/timedmanage"
+	"gitee.com/unitedrhino/share/conf"
+	"gitee.com/unitedrhino/share/ctxs"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/eventBus"
+	"gitee.com/unitedrhino/share/events/topics"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/service/dmsvr/client/deviceinteract"
+	"gitee.com/unitedrhino/things/service/dmsvr/client/devicemanage"
+	"gitee.com/unitedrhino/things/service/dmsvr/client/productmanage"
+	"gitee.com/unitedrhino/things/service/dmsvr/client/protocolmanage"
+	"gitee.com/unitedrhino/things/service/dmsvr/dmExport"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/netx"
 	"github.com/zeromicro/go-zero/zrpc"
 	"sync"
 	"time"
@@ -37,12 +38,12 @@ type LightSvrClient struct {
 }
 
 type LightProtocol struct {
-	FastEvent         *eventBus.FastEvent
-	Pi                *dm.ProtocolInfo
-	ServerName        string
-	ProductIDMap      map[string]string //key 是外部的产品ID,value是内部的产品ID
-	IThingsProductIDs []string          //iThings 的产品ID列表
-	ProductIDMapMutex sync.RWMutex
+	FastEvent             *eventBus.FastEvent
+	Pi                    *dm.ProtocolInfo
+	ServerName            string
+	ProductIDMap          map[string]string //key 是外部的产品ID,value是内部的产品ID
+	UnitedRhinoProductIDs []string          //iThings 的产品ID列表
+	ProductIDMapMutex     sync.RWMutex
 	LightSvrClient
 	ThirdProductIDFieldName devices.ProtocolKey
 	taskCreateOnce          sync.Once
@@ -53,6 +54,7 @@ type LightProtocolConf struct {
 	DmClient   zrpc.Client
 	TimedM     zrpc.Client
 	NodeID     int64
+	Port       int64
 }
 
 func NewLightProtocol(c conf.EventConf, pi *dm.ProtocolInfo, pc *LightProtocolConf) (*LightProtocol, error) {
@@ -97,11 +99,29 @@ func NewLightProtocol(c conf.EventConf, pi *dm.ProtocolInfo, pc *LightProtocolCo
 }
 
 func (p *LightProtocol) Start() error {
-	ctx := context.Background()
+	ctx := ctxs.WithRoot(context.Background())
 	_, err := p.ProtocolM.ProtocolInfoCreate(ctx, p.Pi) //初始化协议
 	if err != nil && !errors.Cmp(errors.Fmt(err), errors.Duplicate) {
 		logx.Must(err)
 	}
+	utils.Go(ctx, func() {
+		run := func() {
+			_, err := p.ProtocolM.ProtocolServiceUpdate(ctx, &dm.ProtocolService{
+				Code:   p.Pi.Code,
+				Ip:     netx.InternalIp(),
+				Port:   1,
+				Status: def.True,
+			})
+			if err != nil {
+				logx.WithContext(ctx).Error(err)
+			}
+		}
+		run()
+		tick := time.Tick(time.Minute)
+		for _ = range tick {
+			run()
+		}
+	})
 
 	err = p.FastEvent.Start()
 	if err != nil {
@@ -170,7 +190,7 @@ func (p *LightProtocol) RegisterTimerHandler(f func(ctx context.Context, t time.
 	ctx := context.Background()
 	p.taskCreateOnce.Do(func() {
 		_, err := p.TimedM.TaskInfoCreate(ctx, &timedmanage.TaskInfo{
-			GroupCode: def.TimedIThingsQueueGroupCode,                                //组编码
+			GroupCode: def.TimedUnitedRhinoQueueGroupCode,                            //组编码
 			Type:      1,                                                             //任务类型 1 定时任务 2 延时任务
 			Name:      fmt.Sprintf("自定义协议-%s-定时任务-数据同步", p.Pi.Name),                  // 任务名称
 			Code:      p.genCode(),                                                   //任务编码
@@ -205,13 +225,13 @@ func (p *LightProtocol) RegisterProductIDSync() error {
 		p.ProductIDMapMutex.Lock()
 		defer p.ProductIDMapMutex.Unlock()
 		p.ProductIDMap = map[string]string{}
-		p.IThingsProductIDs = nil
+		p.UnitedRhinoProductIDs = nil
 		for _, pi := range pis.List {
 			id := pi.ProtocolConf[p.ThirdProductIDFieldName]
 			if id == "" {
 				continue
 			}
-			p.IThingsProductIDs = append(p.IThingsProductIDs, pi.ProductID)
+			p.UnitedRhinoProductIDs = append(p.UnitedRhinoProductIDs, pi.ProductID)
 			p.ProductIDMap[id] = pi.ProductID
 		}
 		return nil
@@ -219,15 +239,15 @@ func (p *LightProtocol) RegisterProductIDSync() error {
 	return err
 }
 
-// 通过外部的产品iD查询iThings的产品iD
+// 通过外部的产品iD查询联犀的产品iD
 func (p *LightProtocol) GetProductID(productID string) string {
 	p.ProductIDMapMutex.RLock()
 	defer p.ProductIDMapMutex.RUnlock()
 	return p.ProductIDMap[productID]
 }
 
-func (p *LightProtocol) GetIThingsProductIDs() []string {
+func (p *LightProtocol) GetUnitedRhinoProductIDs() []string {
 	p.ProductIDMapMutex.RLock()
 	defer p.ProductIDMapMutex.RUnlock()
-	return p.IThingsProductIDs
+	return p.UnitedRhinoProductIDs
 }

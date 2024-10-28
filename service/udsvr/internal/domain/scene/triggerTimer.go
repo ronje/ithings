@@ -1,8 +1,8 @@
 package scene
 
 import (
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/utils"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/utils"
 	"github.com/observerly/dusk/pkg/dusk"
 	"time"
 )
@@ -84,6 +84,26 @@ func (t *TriggerTimer) Validate(repo CheckRepo) error {
 		}
 	}
 	return nil
+}
+
+func (t *TriggerTimer) GenLastRunTime(now time.Time) time.Time {
+	if t == nil {
+		return utils.GetEndTime(now)
+	}
+	if t.ExecType != ExecTypeLoop {
+		dt := utils.DaySecToTime(now, t.ExecAt)
+		if dt.Before(now) { //如果执行时间在之前,则今天不需要执行了
+			return utils.GetEndTime(now)
+		}
+		//如果还没有执行,则修改为当天的最早的时间,到了执行时间就会自动执行
+		return utils.GetZeroTime(now)
+	}
+	start := utils.DaySecToTime(now, t.ExecLoopStart)
+	end := utils.DaySecToTime(now, t.ExecLoopEnd)
+	if now.Before(end) && now.After(start) { //如果在今天的执行范围内那么改为今天最早的时间,则会立马执行一次
+		return utils.GetZeroTime(now)
+	}
+	return utils.GetEndTime(now)
 }
 
 func (t TriggerTimers) Validate(repo CheckRepo) error {

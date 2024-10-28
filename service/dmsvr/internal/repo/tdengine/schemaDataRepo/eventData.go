@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"gitee.com/i-Things/share/domain/deviceMsg/msgThing"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/stores"
-	sq "gitee.com/i-Things/squirrel"
+	"gitee.com/unitedrhino/share/domain/deviceMsg/msgThing"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/stores"
+	sq "gitee.com/unitedrhino/squirrel"
 )
 
 func (d *DeviceDataRepo) InsertEventData(ctx context.Context, productID string,

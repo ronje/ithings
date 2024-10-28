@@ -1,28 +1,28 @@
 package svc
 
 import (
-	"gitee.com/i-Things/core/service/syssvr/client/areamanage"
-	"gitee.com/i-Things/core/service/syssvr/client/common"
-	"gitee.com/i-Things/core/service/syssvr/client/notifymanage"
-	"gitee.com/i-Things/core/service/syssvr/client/ops"
-	"gitee.com/i-Things/core/service/syssvr/client/projectmanage"
-	"gitee.com/i-Things/core/service/syssvr/sysExport"
-	"gitee.com/i-Things/core/service/timed/timedjobsvr/client/timedmanage"
-	"gitee.com/i-Things/share/conf"
-	"gitee.com/i-Things/share/eventBus"
-	"gitee.com/i-Things/share/oss"
-	"gitee.com/i-Things/share/stores"
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/service/dmsvr/client/devicegroup"
-	"gitee.com/i-Things/things/service/dmsvr/client/deviceinteract"
-	"gitee.com/i-Things/things/service/dmsvr/client/devicemanage"
-	"gitee.com/i-Things/things/service/dmsvr/client/devicemsg"
-	"gitee.com/i-Things/things/service/dmsvr/client/productmanage"
-	"gitee.com/i-Things/things/service/dmsvr/client/userdevice"
-	"gitee.com/i-Things/things/service/dmsvr/dmExport"
-	"gitee.com/i-Things/things/service/dmsvr/dmdirect"
-	"gitee.com/i-Things/things/service/udsvr/internal/config"
-	"gitee.com/i-Things/things/service/udsvr/internal/repo/relationDB"
+	"gitee.com/unitedrhino/core/service/syssvr/client/areamanage"
+	"gitee.com/unitedrhino/core/service/syssvr/client/common"
+	"gitee.com/unitedrhino/core/service/syssvr/client/notifymanage"
+	"gitee.com/unitedrhino/core/service/syssvr/client/ops"
+	"gitee.com/unitedrhino/core/service/syssvr/client/projectmanage"
+	"gitee.com/unitedrhino/core/service/syssvr/sysExport"
+	"gitee.com/unitedrhino/core/service/timed/timedjobsvr/client/timedmanage"
+	"gitee.com/unitedrhino/share/conf"
+	"gitee.com/unitedrhino/share/eventBus"
+	"gitee.com/unitedrhino/share/oss"
+	"gitee.com/unitedrhino/share/stores"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/service/dmsvr/client/devicegroup"
+	"gitee.com/unitedrhino/things/service/dmsvr/client/deviceinteract"
+	"gitee.com/unitedrhino/things/service/dmsvr/client/devicemanage"
+	"gitee.com/unitedrhino/things/service/dmsvr/client/devicemsg"
+	"gitee.com/unitedrhino/things/service/dmsvr/client/productmanage"
+	"gitee.com/unitedrhino/things/service/dmsvr/client/userdevice"
+	"gitee.com/unitedrhino/things/service/dmsvr/dmExport"
+	"gitee.com/unitedrhino/things/service/dmsvr/dmdirect"
+	"gitee.com/unitedrhino/things/service/udsvr/internal/config"
+	"gitee.com/unitedrhino/things/service/udsvr/internal/repo/relationDB"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/kv"
 	"github.com/zeromicro/go-zero/zrpc"
@@ -42,9 +42,9 @@ type SvrClient struct {
 	ProjectM           projectmanage.ProjectManage
 	DeviceCache        dmExport.DeviceCacheT
 	UserShareCache     dmExport.UserShareCacheT
-	ProductCache       dmExport.ProductCacheT
-	ProductSchemaCache dmExport.SchemaCacheT
-	ProjectCache       sysExport.ProjectCacheT
+	ProductCache dmExport.ProductCacheT
+	SchemaCache  dmExport.SchemaCacheT
+	ProjectCache sysExport.ProjectCacheT
 	Ops                ops.Ops
 }
 
@@ -123,17 +123,17 @@ func NewServiceContext(c config.Config) *ServiceContext {
 			SysCommon:          common.NewCommon(zrpc.MustNewClient(c.SysRpc.Conf)),
 			NotifyM:            notifyM,
 			ProjectM:           projectM,
-			ProjectCache:       projectC,
-			ProductM:           productM,
-			Ops:                Ops,
-			DeviceInteract:     deviceInteract,
-			DeviceMsg:          deviceMsg,
-			DeviceM:            deviceM,
-			DeviceG:            deviceG,
-			DeviceCache:        dic,
-			ProductCache:       pic,
-			UserShareCache:     udc,
-			ProductSchemaCache: psc,
+			ProjectCache:   projectC,
+			ProductM:       productM,
+			Ops:            Ops,
+			DeviceInteract: deviceInteract,
+			DeviceMsg:      deviceMsg,
+			DeviceM:        deviceM,
+			DeviceG:        deviceG,
+			DeviceCache:    dic,
+			ProductCache:   pic,
+			UserShareCache: udc,
+			SchemaCache:    psc,
 		},
 	}
 }

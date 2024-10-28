@@ -2,14 +2,14 @@ package timerEvent
 
 import (
 	"context"
-	"gitee.com/i-Things/share/ctxs"
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/share/domain/application"
-	"gitee.com/i-Things/share/stores"
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/service/udsvr/internal/domain/scene"
-	rulelogic "gitee.com/i-Things/things/service/udsvr/internal/logic/rule"
-	"gitee.com/i-Things/things/service/udsvr/internal/repo/relationDB"
+	"gitee.com/unitedrhino/share/ctxs"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/share/domain/application"
+	"gitee.com/unitedrhino/share/stores"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/service/udsvr/internal/domain/scene"
+	rulelogic "gitee.com/unitedrhino/things/service/udsvr/internal/logic/rule"
+	"gitee.com/unitedrhino/things/service/udsvr/internal/repo/relationDB"
 	"github.com/zeromicro/go-zero/core/logx"
 	"time"
 )
@@ -27,6 +27,7 @@ func (l *TimerHandle) SceneThingPropertyReport(in application.PropertyReport) er
 			Type:      scene.TriggerTypeDevice,
 			ProjectID: stores.CmpIn(def.RootNode, di.ProjectID),
 			AreaID:    stores.CmpIn(def.RootNode, di.AreaID),
+			Device:    &in.Device,
 			DataID:    in.Identifier,
 		},
 		{
@@ -36,18 +37,18 @@ func (l *TimerHandle) SceneThingPropertyReport(in application.PropertyReport) er
 			DataID: in.Identifier,
 		},
 	}
-	var list []*relationDB.UdSceneIfTrigger
-	for _, v := range triggerF {
-		pos, err := db.FindByFilter(l.ctx, v, nil)
-		if err != nil {
-			l.Error(err)
-			return err
-		}
-		list = append(list, pos...)
+	list, err := db.FindByFilters(l.ctx, triggerF, nil)
+	if err != nil {
+		l.Error(err)
+		return err
 	}
-
+	var sceneIDSet = map[int64]struct{}{}
 	for _, v := range list {
 		var po = v
+		if _, ok := sceneIDSet[po.SceneID]; ok {
+			continue
+		}
+		sceneIDSet[po.SceneID] = struct{}{}
 		if po.SceneInfo == nil {
 			logx.WithContext(l.ctx).Errorf("trigger device not bind scene, trigger:%v", utils.Fmt(po))
 			relationDB.NewSceneIfTriggerRepo(l.ctx).Delete(l.ctx, po.ID)
@@ -55,8 +56,10 @@ func (l *TimerHandle) SceneThingPropertyReport(in application.PropertyReport) er
 		}
 		po.SceneInfo.Triggers = append(po.SceneInfo.Triggers, po)
 		do := rulelogic.PoToSceneInfoDo(po.SceneInfo)
-
-		ps, err := l.svcCtx.ProductSchemaCache.GetData(l.ctx, in.Device.ProductID)
+		do.DeviceName = di.DeviceName
+		do.DeviceAlias = di.DeviceAlias.GetValue()
+		do.ProductID = di.ProductID
+		ps, err := l.svcCtx.SchemaCache.GetData(l.ctx, in.Device)
 		if err != nil {
 			l.Error(err)
 			continue

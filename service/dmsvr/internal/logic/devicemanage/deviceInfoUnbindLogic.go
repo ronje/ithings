@@ -2,19 +2,19 @@ package devicemanagelogic
 
 import (
 	"context"
-	"gitee.com/i-Things/core/service/syssvr/pb/sys"
-	"gitee.com/i-Things/share/ctxs"
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/eventBus"
-	"gitee.com/i-Things/share/stores"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/relationDB"
+	"gitee.com/unitedrhino/core/service/syssvr/pb/sys"
+	"gitee.com/unitedrhino/share/ctxs"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/eventBus"
+	"gitee.com/unitedrhino/share/stores"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/relationDB"
 	"gorm.io/gorm"
 	"time"
 
-	"gitee.com/i-Things/things/service/dmsvr/internal/svc"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/svc"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -116,6 +116,28 @@ func (l *DeviceInfoUnbindLogic) DeviceInfoUnbind(in *dm.DeviceCore) (*dm.Empty, 
 	err = l.svcCtx.FastEvent.Publish(l.ctx, eventBus.DmDeviceInfoUnbind, &devices.Core{ProductID: in.ProductID, DeviceName: in.DeviceName})
 	if err != nil {
 		l.Error(err)
+	}
+	if di.DeviceType == def.DeviceTypeGateway { //网关类型的需要解绑子设备
+		ctxs.GoNewCtx(l.ctx, func(ctx context.Context) {
+			subs, err := relationDB.NewGatewayDeviceRepo(ctx).FindByFilter(l.ctx, relationDB.GatewayDeviceFilter{Gateway: &devices.Core{
+				ProductID:  di.ProductID,
+				DeviceName: di.DeviceName,
+			}}, nil)
+			if err != nil {
+				logx.WithContext(ctx).Error(err)
+				return
+			}
+			for _, sub := range subs {
+				_, err := NewDeviceInfoUnbindLogic(ctx, l.svcCtx).DeviceInfoUnbind(&dm.DeviceCore{
+					ProductID:  sub.ProductID,
+					DeviceName: sub.DeviceName,
+				})
+				if err != nil {
+					logx.WithContext(ctx).Error(err)
+					continue
+				}
+			}
+		})
 	}
 	return &dm.Empty{}, err
 }

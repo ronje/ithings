@@ -1,13 +1,13 @@
 package scene
 
 import (
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/domain/application"
-	"gitee.com/i-Things/share/domain/schema"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/service/dmsvr/dmExport"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/domain/application"
+	"gitee.com/unitedrhino/share/domain/schema"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/service/dmsvr/dmExport"
 	"github.com/spf13/cast"
 	"strings"
 )
@@ -25,6 +25,7 @@ type TriggerDevices []*TriggerDevice
 
 type TriggerDevice struct {
 	StateKeep        *StateKeep        `json:"stateKeep,omitempty"`   //状态保持
+	ProductName      string            `json:"productName,omitempty"` //产品名称,只读
 	ProductID        string            `json:"productID,omitempty"`   //产品id
 	SelectType       SelectType        `json:"selectType"`            //设备选择方式  all: 全部 fixed:指定的设备
 	GroupID          int64             `json:"groupID,omitempty"`     //分组id
@@ -83,7 +84,7 @@ func (t *TriggerDevice) Validate(repo CheckRepo) error {
 		if len(t.DataID) == 0 {
 			return errors.Parameter.AddMsg("触发设备类型中的标识符需要填写")
 		}
-		v, err := repo.ProductSchemaCache.GetData(repo.Ctx, t.ProductID)
+		v, err := repo.SchemaCache.GetData(repo.Ctx, devices.Core{ProductID: t.ProductID, DeviceName: t.DeviceName})
 		if err != nil {
 			return err
 		}
@@ -103,7 +104,7 @@ func (t *TriggerDevice) Validate(repo CheckRepo) error {
 		if len(t.DataID) == 0 {
 			return errors.Parameter.AddMsg("触发设备类型中的标识符需要填写")
 		}
-		v, err := repo.ProductSchemaCache.GetData(repo.Ctx, t.ProductID)
+		v, err := repo.SchemaCache.GetData(repo.Ctx, devices.Core{ProductID: t.ProductID, DeviceName: t.DeviceName})
 		if err != nil {
 			return err
 		}
@@ -123,6 +124,11 @@ func (t *TriggerDevice) Validate(repo CheckRepo) error {
 	if repo.Info.DeviceMode != DeviceModeSingle {
 		t.DeviceAlias = GetDeviceAlias(repo.Ctx, repo.DeviceCache, t.ProductID, t.DeviceName)
 	}
+	pi, err := repo.ProductCache.GetData(repo.Ctx, t.ProductID)
+	if err != nil {
+		return err
+	}
+	t.ProductName = pi.ProductName
 	return nil
 }
 func (t TriggerDevices) Validate(repo CheckRepo) error {

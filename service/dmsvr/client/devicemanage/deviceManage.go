@@ -7,8 +7,8 @@ package devicemanage
 import (
 	"context"
 
-	"gitee.com/i-Things/things/service/dmsvr/internal/svc"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/svc"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 
 	"github.com/zeromicro/go-zero/zrpc"
 	"google.golang.org/grpc"
@@ -60,6 +60,7 @@ type (
 	DeviceProfileIndexReq             = dm.DeviceProfileIndexReq
 	DeviceProfileIndexResp            = dm.DeviceProfileIndexResp
 	DeviceProfileReadReq              = dm.DeviceProfileReadReq
+	DeviceShareInfo                   = dm.DeviceShareInfo
 	DeviceTransferReq                 = dm.DeviceTransferReq
 	DeviceTypeCountReq                = dm.DeviceTypeCountReq
 	DeviceTypeCountResp               = dm.DeviceTypeCountResp
@@ -166,6 +167,9 @@ type (
 	ProtocolInfo                      = dm.ProtocolInfo
 	ProtocolInfoIndexReq              = dm.ProtocolInfoIndexReq
 	ProtocolInfoIndexResp             = dm.ProtocolInfoIndexResp
+	ProtocolService                   = dm.ProtocolService
+	ProtocolServiceIndexReq           = dm.ProtocolServiceIndexReq
+	ProtocolServiceIndexResp          = dm.ProtocolServiceIndexResp
 	RemoteConfigCreateReq             = dm.RemoteConfigCreateReq
 	RemoteConfigIndexReq              = dm.RemoteConfigIndexReq
 	RemoteConfigIndexResp             = dm.RemoteConfigIndexResp
@@ -194,7 +198,10 @@ type (
 	UserDeviceShareIndexReq           = dm.UserDeviceShareIndexReq
 	UserDeviceShareIndexResp          = dm.UserDeviceShareIndexResp
 	UserDeviceShareInfo               = dm.UserDeviceShareInfo
+	UserDeviceShareMultiAcceptReq     = dm.UserDeviceShareMultiAcceptReq
 	UserDeviceShareMultiDeleteReq     = dm.UserDeviceShareMultiDeleteReq
+	UserDeviceShareMultiInfo          = dm.UserDeviceShareMultiInfo
+	UserDeviceShareMultiToken         = dm.UserDeviceShareMultiToken
 	UserDeviceShareReadReq            = dm.UserDeviceShareReadReq
 	WithID                            = dm.WithID
 	WithIDChildren                    = dm.WithIDChildren

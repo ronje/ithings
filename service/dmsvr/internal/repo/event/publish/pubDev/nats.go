@@ -3,13 +3,13 @@ package pubDev
 import (
 	"context"
 	"fmt"
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/domain/deviceMsg"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/eventBus"
-	"gitee.com/i-Things/share/events/topics"
-	"gitee.com/i-Things/share/utils"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/domain/deviceMsg"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/eventBus"
+	"gitee.com/unitedrhino/share/events/topics"
+	"gitee.com/unitedrhino/share/utils"
 	"github.com/zeromicro/go-zero/core/logx"
 	"time"
 )
@@ -27,7 +27,7 @@ func newNatsClient(fast *eventBus.FastEvent) (*NatsClient, error) {
 func (n *NatsClient) PublishToDev(ctx context.Context, respMsg *deviceMsg.PublishMsg) error {
 	startTime := time.Now()
 	if respMsg.ProtocolCode == "" {
-		respMsg.ProtocolCode = def.ProtocolCodeIThings
+		respMsg.ProtocolCode = def.ProtocolCodeUnitedRhino
 	}
 	defer func() {
 		logx.WithContext(ctx).WithDuration(time.Now().Sub(startTime)).

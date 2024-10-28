@@ -1,29 +1,29 @@
 package scene
 
 import (
-	"gitee.com/i-Things/core/service/syssvr/client/common"
-	"gitee.com/i-Things/core/service/syssvr/client/notifymanage"
-	"gitee.com/i-Things/core/service/syssvr/sysExport"
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/things/service/dmsvr/client/devicegroup"
-	deviceinteract "gitee.com/i-Things/things/service/dmsvr/client/deviceinteract"
-	devicemanage "gitee.com/i-Things/things/service/dmsvr/client/devicemanage"
-	devicemsg "gitee.com/i-Things/things/service/dmsvr/client/devicemsg"
-	"gitee.com/i-Things/things/service/dmsvr/dmExport"
+	"gitee.com/unitedrhino/core/service/syssvr/client/common"
+	"gitee.com/unitedrhino/core/service/syssvr/client/notifymanage"
+	"gitee.com/unitedrhino/core/service/syssvr/sysExport"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/things/service/dmsvr/client/devicegroup"
+	deviceinteract "gitee.com/unitedrhino/things/service/dmsvr/client/deviceinteract"
+	devicemanage "gitee.com/unitedrhino/things/service/dmsvr/client/devicemanage"
+	devicemsg "gitee.com/unitedrhino/things/service/dmsvr/client/devicemsg"
+	"gitee.com/unitedrhino/things/service/dmsvr/dmExport"
 )
 import "context"
 
 type CheckRepo struct {
-	Ctx                context.Context
-	DeviceCache        dmExport.DeviceCacheT
-	UserShareCache     dmExport.UserShareCacheT
-	ProductCache       dmExport.ProductCacheT
-	ProductSchemaCache dmExport.SchemaCacheT
-	ProjectCache       sysExport.ProjectCacheT
-	DeviceMsg          devicemsg.DeviceMsg
-	Common             common.Common
-	GetSceneInfo       func(ctx context.Context, sceneID int64) (*Info, error)
-	Info               *Info
+	Ctx            context.Context
+	DeviceCache    dmExport.DeviceCacheT
+	UserShareCache dmExport.UserShareCacheT
+	ProductCache   dmExport.ProductCacheT
+	SchemaCache    dmExport.SchemaCacheT
+	ProjectCache   sysExport.ProjectCacheT
+	DeviceMsg      devicemsg.DeviceMsg
+	Common         common.Common
+	GetSceneInfo   func(ctx context.Context, sceneID int64) (*Info, error)
+	Info           *Info
 }
 
 type ActionRepo struct {

@@ -1,9 +1,9 @@
 package share
 
 import (
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/service/apisvr/internal/types"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/service/apisvr/internal/types"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 )
 
 func ToSharePb(in *types.UserDeviceShareInfo) *dm.UserDeviceShareInfo {
@@ -50,4 +50,55 @@ func ToSharesTypes(in []*dm.UserDeviceShareInfo) (ret []*types.UserDeviceShareIn
 		ret = append(ret, ToShareTypes(v))
 	}
 	return
+}
+func ToMuitlSharePb(in *types.UserDeviceShareMultiInfo) *dm.UserDeviceShareMultiInfo {
+	if in == nil {
+		return nil
+	}
+	var dvs []*dm.DeviceShareInfo
+	for _, v := range in.Devices {
+		dvs = append(dvs, &dm.DeviceShareInfo{
+			DeviceName: v.DeviceName,
+			ProductID:  v.ProductID,
+		})
+	}
+	return &dm.UserDeviceShareMultiInfo{
+		Devices:    dvs,
+		AuthType:   in.AuthType,
+		ExpTime:    in.ExpTime,
+		AccessPerm: utils.CopyMap[dm.SharePerm](in.AccessPerm),
+		SchemaPerm: utils.CopyMap[dm.SharePerm](in.SchemaPerm),
+	}
+}
+func ToSharesDevices(in []*types.DeviceCore) (ret []*dm.DeviceCore) {
+	for _, v := range in {
+		ret = append(ret, &dm.DeviceCore{
+			DeviceName: v.DeviceName,
+			ProductID:  v.ProductID,
+		})
+	}
+	return ret
+}
+func ToMultiShareTypes(in *dm.UserDeviceShareMultiInfo) *types.UserDeviceShareMultiIndexResp {
+	if in == nil {
+		return nil
+	}
+	var dvs []*types.DeviceShareInfo
+	for _, v := range in.Devices {
+		dvs = append(dvs, &types.DeviceShareInfo{
+			DeviceName:  v.DeviceName,
+			ProductID:   v.ProductID,
+			ProductName: v.ProductName,
+			DeviceAlias: v.DeviceAlias.GetValue(),
+			ProductImg:  v.ProductImg,
+		})
+	}
+	return &types.UserDeviceShareMultiIndexResp{
+		Devices:     dvs,
+		AuthType:    in.AuthType,
+		CreatedTime: in.CreatedTime,
+		ExpTime:     in.ExpTime,
+		AccessPerm:  utils.CopyMap[types.SharePerm](in.AccessPerm),
+		SchemaPerm:  utils.CopyMap[types.SharePerm](in.SchemaPerm),
+	}
 }

@@ -3,14 +3,14 @@ package timerEvent
 import (
 	"context"
 	"fmt"
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/share/stores"
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/service/udsvr/internal/domain/scene"
-	rulelogic "gitee.com/i-Things/things/service/udsvr/internal/logic/rule"
-	"gitee.com/i-Things/things/service/udsvr/internal/repo/relationDB"
-	"gitee.com/i-Things/things/service/udsvr/internal/svc"
-	"gitee.com/i-Things/things/service/udsvr/pb/ud"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/share/stores"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/service/udsvr/internal/domain/scene"
+	rulelogic "gitee.com/unitedrhino/things/service/udsvr/internal/logic/rule"
+	"gitee.com/unitedrhino/things/service/udsvr/internal/repo/relationDB"
+	"gitee.com/unitedrhino/things/service/udsvr/internal/svc"
+	"gitee.com/unitedrhino/things/service/udsvr/pb/ud"
 	"github.com/zeromicro/go-zero/core/logx"
 	"time"
 )
@@ -76,10 +76,10 @@ func (l *TimerHandle) SceneExec(ctx context.Context, do *scene.Info) {
 				SceneID:     in.Scene.ID,
 				Mode:        scene.ActionAlarmModeTrigger,
 			}
-			if trigger.Type == scene.TriggerTypeDevice && trigger.Device != nil {
-				req.ProductID = trigger.Device.ProductID
-				req.DeviceName = trigger.Device.DeviceName
-				req.DeviceAlias = trigger.Device.DeviceAlias
+			if trigger.Type == scene.TriggerTypeDevice && in.Scene.DeviceName != "" {
+				req.ProductID = in.Scene.ProductID
+				req.DeviceName = in.Scene.DeviceName
+				req.DeviceAlias = in.Scene.DeviceAlias
 			}
 			_, err := rulelogic.NewAlarmRecordCreateLogic(stores.SetIsDebug(ctx, false), l.svcCtx).
 				AlarmRecordCreate(&req)

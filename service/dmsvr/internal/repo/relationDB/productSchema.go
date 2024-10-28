@@ -2,9 +2,9 @@ package relationDB
 
 import (
 	"context"
-	"gitee.com/i-Things/share/domain/schema"
-	"gitee.com/i-Things/share/stores"
-	"gitee.com/i-Things/share/utils"
+	"gitee.com/unitedrhino/share/domain/schema"
+	"gitee.com/unitedrhino/share/stores"
+	"gitee.com/unitedrhino/share/utils"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -116,7 +116,7 @@ func (p ProductSchemaRepo) UpdateTag(ctx context.Context, productIDs []string, i
 func (p ProductSchemaRepo) UpdateWithCommon(ctx context.Context, common *DmCommonSchema) error {
 	data := DmProductSchema{
 		DmSchemaCore: DmSchemaCore{
-			ExtendConfig:      common.ExtendConfig,
+			//ExtendConfig:      common.ExtendConfig,
 			Name:              common.Name,
 			Required:          common.Required,
 			IsCanSceneLinkage: common.IsCanSceneLinkage,

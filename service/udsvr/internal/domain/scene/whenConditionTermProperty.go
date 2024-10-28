@@ -2,10 +2,11 @@ package scene
 
 import (
 	"context"
-	"gitee.com/i-Things/share/domain/schema"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/utils"
-	devicemsg "gitee.com/i-Things/things/service/dmsvr/client/devicemsg"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/domain/schema"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/utils"
+	devicemsg "gitee.com/unitedrhino/things/service/dmsvr/client/devicemsg"
 	"github.com/spf13/cast"
 	"github.com/zeromicro/go-zero/core/logx"
 	"strings"
@@ -14,6 +15,7 @@ import (
 // TermProperty 物模型类型 属性
 type TermProperty struct {
 	AreaID           int64    `json:"areaID,string,omitempty"` //仅做记录
+	ProductName      string   `json:"productName,omitempty"`   //产品名称,只读
 	ProductID        string   `json:"productID,omitempty"`     //产品id
 	DeviceName       string   `json:"deviceName,omitempty"`
 	DeviceAlias      string   `json:"deviceAlias,omitempty"`
@@ -47,7 +49,7 @@ func (c *TermProperty) Validate(repo CheckRepo) error {
 	if repo.Info.DeviceMode != DeviceModeSingle {
 		c.DeviceAlias = GetDeviceAlias(repo.Ctx, repo.DeviceCache, c.ProductID, c.DeviceName)
 	}
-	v, err := repo.ProductSchemaCache.GetData(repo.Ctx, c.ProductID)
+	v, err := repo.SchemaCache.GetData(repo.Ctx, devices.Core{ProductID: c.ProductID, DeviceName: c.DeviceName})
 	if err != nil {
 		return err
 	}
@@ -59,10 +61,15 @@ func (c *TermProperty) Validate(repo CheckRepo) error {
 	if c.DataName == "" {
 		c.DataName = p.Name
 	}
+	pi, err := repo.ProductCache.GetData(repo.Ctx, c.ProductID)
+	if err != nil {
+		return err
+	}
+	c.ProductName = pi.ProductName
 	return nil
 }
 func (c *TermProperty) IsHit(ctx context.Context, columnType TermColumnType, repo CheckRepo) bool {
-	sm, err := repo.ProductSchemaCache.GetData(ctx, c.ProductID)
+	sm, err := repo.SchemaCache.GetData(ctx, devices.Core{ProductID: c.ProductID, DeviceName: c.DeviceName})
 	if err != nil {
 		logx.WithContext(ctx).Errorf("%s.GetSchemaModel err:%v", utils.FuncName(), err)
 		return false

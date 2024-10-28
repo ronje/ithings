@@ -4,33 +4,34 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gitee.com/i-Things/core/service/timed/timedjobsvr/client/timedmanage"
-	"gitee.com/i-Things/share/caches"
-	"gitee.com/i-Things/share/ctxs"
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/domain/application"
-	"gitee.com/i-Things/share/domain/deviceMsg"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/eventBus"
-	"gitee.com/i-Things/share/events/topics"
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/service/dmsvr/internal/domain/deviceStatus"
-	"gitee.com/i-Things/things/service/dmsvr/internal/domain/userShared"
-	"gitee.com/i-Things/things/service/dmsvr/internal/event/deviceMsgEvent"
-	"gitee.com/i-Things/things/service/dmsvr/internal/event/otaEvent"
-	"gitee.com/i-Things/things/service/dmsvr/internal/event/serverEvent"
-	"gitee.com/i-Things/things/service/dmsvr/internal/event/staticEvent"
-	"gitee.com/i-Things/things/service/dmsvr/internal/logic"
-	devicemanagelogic "gitee.com/i-Things/things/service/dmsvr/internal/logic/devicemanage"
-	userdevicelogic "gitee.com/i-Things/things/service/dmsvr/internal/logic/userdevice"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/event/subscribe/server"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/relationDB"
-	"gitee.com/i-Things/things/service/dmsvr/internal/svc"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+	"time"
+
+	"gitee.com/unitedrhino/core/service/timed/timedjobsvr/client/timedmanage"
+	"gitee.com/unitedrhino/share/caches"
+	"gitee.com/unitedrhino/share/ctxs"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/domain/application"
+	"gitee.com/unitedrhino/share/domain/deviceMsg"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/eventBus"
+	"gitee.com/unitedrhino/share/events/topics"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/domain/deviceStatus"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/domain/userShared"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/event/deviceMsgEvent"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/event/otaEvent"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/event/serverEvent"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/event/staticEvent"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/logic"
+	devicemanagelogic "gitee.com/unitedrhino/things/service/dmsvr/internal/logic/devicemanage"
+	userdevicelogic "gitee.com/unitedrhino/things/service/dmsvr/internal/logic/userdevice"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/event/subscribe/server"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/relationDB"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/svc"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 	"github.com/spf13/cast"
 	"github.com/zeromicro/go-zero/core/logx"
-	"time"
 )
 
 func Init(svcCtx *svc.ServiceContext) {
@@ -98,6 +99,18 @@ func InitCache(svcCtx *svc.ServiceContext) {
 		})
 		logx.Must(err)
 		svcCtx.UserDeviceShare = userDeviceShare
+	}
+	{
+		userMultiDeviceShare, err := caches.NewCache(caches.CacheConfig[dm.UserDeviceShareMultiInfo, string]{
+			KeyType:   eventBus.ServerCacheKeyDmMultiDevicesShare,
+			FastEvent: svcCtx.FastEvent,
+			GetData: func(ctx context.Context, key string) (*dm.UserDeviceShareMultiInfo, error) {
+				return &dm.UserDeviceShareMultiInfo{}, errors.Failure.WithMsg("分享已过期")
+			},
+			ExpireTime: 24 * time.Hour,
+		})
+		logx.Must(err)
+		svcCtx.UserMultiDeviceShare = userMultiDeviceShare
 	}
 
 	productCache, err := caches.NewCache(caches.CacheConfig[dm.ProductInfo, string]{
@@ -371,7 +384,14 @@ func InitEventBus(svcCtx *svc.ServiceContext) {
 		if t.Before(time.Now().Add(-time.Second * 2)) { //2秒之前的跳过
 			return nil
 		}
-		return staticEvent.NewStaticHandle(ctxs.WithRoot(ctx), svcCtx).Handle()
+		return staticEvent.NewHalfHourHandle(ctxs.WithRoot(ctx), svcCtx).Handle()
+	})
+	logx.Must(err)
+	err = svcCtx.FastEvent.QueueSubscribe(eventBus.DmDeviceStaticOneMinute, func(ctx context.Context, t time.Time, body []byte) error {
+		if t.Before(time.Now().Add(-time.Second * 2)) { //2秒之前的跳过
+			return nil
+		}
+		return staticEvent.NewOneMinuteHandle(ctxs.WithRoot(ctx), svcCtx).Handle()
 	})
 	logx.Must(err)
 	err = svcCtx.FastEvent.Start()
@@ -381,9 +401,9 @@ func InitEventBus(svcCtx *svc.ServiceContext) {
 func TimerInit(svcCtx *svc.ServiceContext) {
 	ctx := context.Background()
 	_, err := svcCtx.TimedM.TaskInfoCreate(ctx, &timedmanage.TaskInfo{
-		GroupCode: def.TimedIThingsQueueGroupCode,                                              //组编码
+		GroupCode: def.TimedUnitedRhinoQueueGroupCode,                                          //组编码
 		Type:      1,                                                                           //任务类型 1 定时任务 2 延时任务
-		Name:      "iThings ota升级定时任务",                                                         // 任务名称
+		Name:      "联犀 ota升级定时任务",                                                              // 任务名称
 		Code:      "iThingsOtaDeviceUpgradePush",                                               //任务编码
 		Params:    fmt.Sprintf(`{"topic":"%s","payload":""}`, eventBus.DmOtaDeviceUpgradePush), // 任务参数,延时任务如果没有传任务参数会拿数据库的参数来执行
 		CronExpr:  "@every 5s",                                                                 // cron执行表达式
@@ -394,9 +414,9 @@ func TimerInit(svcCtx *svc.ServiceContext) {
 		logx.Must(err)
 	}
 	_, err = svcCtx.TimedM.TaskInfoCreate(ctx, &timedmanage.TaskInfo{
-		GroupCode: def.TimedIThingsQueueGroupCode,                                                  //组编码
+		GroupCode: def.TimedUnitedRhinoQueueGroupCode,                                              //组编码
 		Type:      1,                                                                               //任务类型 1 定时任务 2 延时任务
-		Name:      "iThings 设备在线状态改变处理",                                                            // 任务名称
+		Name:      "联犀 设备在线状态改变处理",                                                                 // 任务名称
 		Code:      "dmDeviceOnlineStatusChange",                                                    //任务编码
 		Params:    fmt.Sprintf(`{"topic":"%s","payload":""}`, eventBus.DmDeviceOnlineStatusChange), // 任务参数,延时任务如果没有传任务参数会拿数据库的参数来执行
 		CronExpr:  "@every 1s",                                                                     // cron执行表达式
@@ -407,14 +427,24 @@ func TimerInit(svcCtx *svc.ServiceContext) {
 		logx.Must(err)
 	}
 	_, err = svcCtx.TimedM.TaskInfoCreate(ctx, &timedmanage.TaskInfo{
-		GroupCode: def.TimedIThingsQueueGroupCode,                                              //组编码
+		GroupCode: def.TimedUnitedRhinoQueueGroupCode,                                          //组编码
 		Type:      1,                                                                           //任务类型 1 定时任务 2 延时任务
-		Name:      "iThings 设备半小时统计",                                                           // 任务名称
+		Name:      "联犀 设备半小时统计",                                                                // 任务名称
 		Code:      "dmDeviceStaticHalfHour",                                                    //任务编码
 		Params:    fmt.Sprintf(`{"topic":"%s","payload":""}`, eventBus.DmDeviceStaticHalfHour), // 任务参数,延时任务如果没有传任务参数会拿数据库的参数来执行
 		CronExpr:  "@every 30m",                                                                // cron执行表达式
 		Status:    def.StatusWaitRun,                                                           // 状态
 		Priority:  3,                                                                           //优先级: 10:critical 最高优先级  3: default 普通优先级 1:low 低优先级
+	})
+	_, err = svcCtx.TimedM.TaskInfoCreate(ctx, &timedmanage.TaskInfo{
+		GroupCode: def.TimedUnitedRhinoQueueGroupCode,                                           //组编码
+		Type:      1,                                                                            //任务类型 1 定时任务 2 延时任务
+		Name:      "联犀 设备1分钟统计",                                                                 // 任务名称
+		Code:      "dmDeviceStaticOneMinute",                                                    //任务编码
+		Params:    fmt.Sprintf(`{"topic":"%s","payload":""}`, eventBus.DmDeviceStaticOneMinute), // 任务参数,延时任务如果没有传任务参数会拿数据库的参数来执行
+		CronExpr:  "@every 1m",                                                                  // cron执行表达式
+		Status:    def.StatusWaitRun,                                                            // 状态
+		Priority:  3,                                                                            //优先级: 10:critical 最高优先级  3: default 普通优先级 1:low 低优先级
 	})
 	if err != nil && !errors.Cmp(errors.Fmt(err), errors.Duplicate) {
 		logx.Must(err)

@@ -2,10 +2,10 @@ package shadow
 
 import (
 	"context"
-	"gitee.com/i-Things/share/domain/deviceMsg/msgThing"
-	"gitee.com/i-Things/share/domain/schema"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/utils"
+	"gitee.com/unitedrhino/share/domain/deviceMsg/msgThing"
+	"gitee.com/unitedrhino/share/domain/schema"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/utils"
 	"time"
 )
 
@@ -15,7 +15,9 @@ const (
 	ControlOnly             = 2 //如果有设备影子只修改影子,没有的也不下发
 	ControlOnlyCloud        = 3 //只修改云端的值
 	ControlOnlyCloudWithLog = 4 //只修改云端的值并记录操作日志
+	ControlNoLog            = 5 //只实时下发,不在线报错,且不记录日志
 )
+
 const (
 	UpdatedDevice   = 1 //已经更新到过设备
 	NotUpdateDevice = 2 //尚未更新到过设备
@@ -78,6 +80,9 @@ func ToValues(in []*Info, property schema.PropertyMap) map[string]msgThing.Param
 		p := property[v.DataID]
 		if p == nil {
 			continue
+		}
+		if len(v.Value) > 2 && v.Value[0] == '"' && v.Value[len(v.Value)-1] == '"' { //转换的时候可能会带上双引号,需要去掉
+			v.Value = v.Value[1 : len(v.Value)-1]
 		}
 		val, err := p.Define.FmtValue(v.Value)
 		if err != nil {

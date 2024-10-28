@@ -3,17 +3,17 @@ package devicemsglogic
 import (
 	"context"
 	"encoding/json"
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/domain/deviceMsg/msgThing"
-	"gitee.com/i-Things/share/domain/schema"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/service/dmsvr/internal/logic"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/domain/deviceMsg/msgThing"
+	"gitee.com/unitedrhino/share/domain/schema"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/logic"
 	"sync"
 
-	"gitee.com/i-Things/things/service/dmsvr/internal/svc"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/svc"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -39,14 +39,15 @@ func (l *PropertyLogLatestIndexLogic) PropertyLogLatestIndex(in *dm.PropertyLogL
 		total   int
 		dataMap map[string]*schema.Property
 	)
-	_, err := logic.SchemaAccess(l.ctx, l.svcCtx, def.AuthRead, devices.Core{
+	dc := devices.Core{
 		ProductID:  in.ProductID,
 		DeviceName: in.DeviceName,
-	}, nil)
+	}
+	_, err := logic.SchemaAccess(l.ctx, l.svcCtx, def.AuthRead, dc, nil)
 	if err != nil {
 		return nil, err
 	}
-	temp, err := l.svcCtx.SchemaRepo.GetData(l.ctx, in.ProductID)
+	temp, err := l.svcCtx.SchemaRepo.GetData(l.ctx, dc)
 	if err != nil {
 		return nil, errors.System.AddDetail(err)
 	}

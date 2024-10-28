@@ -3,16 +3,16 @@ package devicemsglogic
 import (
 	"context"
 	"encoding/json"
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/domain/deviceMsg/msgThing"
-	"gitee.com/i-Things/share/domain/schema"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/service/dmsvr/internal/logic"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/domain/deviceMsg/msgThing"
+	"gitee.com/unitedrhino/share/domain/schema"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/logic"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 
-	"gitee.com/i-Things/things/service/dmsvr/internal/svc"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -49,7 +49,11 @@ func (l *PropertyLogIndexLogic) PropertyLogIndex(in *dm.PropertyLogIndexReq) (*d
 	if in.Interval != 0 && in.ArgFunc == "" {
 		return nil, errors.Parameter.AddMsg("填写了间隔就必须填写聚合函数")
 	}
-	t, err := l.svcCtx.SchemaRepo.GetData(l.ctx, in.ProductID)
+	gd := devices.Core{ProductID: in.ProductID}
+	if len(in.DeviceNames) == 1 {
+		gd.DeviceName = in.DeviceNames[0]
+	}
+	t, err := l.svcCtx.SchemaRepo.GetData(l.ctx, gd)
 	if err != nil {
 		return nil, err
 	}

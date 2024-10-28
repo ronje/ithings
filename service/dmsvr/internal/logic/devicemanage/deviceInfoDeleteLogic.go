@@ -2,17 +2,17 @@ package devicemanagelogic
 
 import (
 	"context"
-	"gitee.com/i-Things/share/ctxs"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/eventBus"
-	"gitee.com/i-Things/share/stores"
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/relationDB"
+	"gitee.com/unitedrhino/share/ctxs"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/eventBus"
+	"gitee.com/unitedrhino/share/stores"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/relationDB"
 	"gorm.io/gorm"
 
-	"gitee.com/i-Things/things/service/dmsvr/internal/svc"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/svc"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -104,7 +104,7 @@ func (l *DeviceInfoDeleteLogic) DeviceInfoDelete(in *dm.DeviceInfoDeleteReq) (*d
 }
 
 func DeleteDeviceTimeData(ctx context.Context, svcCtx *svc.ServiceContext, productID, deviceName string) error {
-	schema, err := svcCtx.SchemaRepo.GetData(ctx, productID)
+	schema, err := svcCtx.SchemaRepo.GetData(ctx, devices.Core{ProductID: productID, DeviceName: deviceName})
 	if err != nil {
 		logx.WithContext(ctx).Errorf("%s.GetSchemaModel err=%+v", utils.FuncName(), err)
 		return errors.System.AddDetail(err)

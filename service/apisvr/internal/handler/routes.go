@@ -6,37 +6,38 @@ package handler
 import (
 	"net/http"
 
-	thingsdeviceauth "gitee.com/i-Things/things/service/apisvr/internal/handler/things/device/auth"
-	thingsdeviceauth5 "gitee.com/i-Things/things/service/apisvr/internal/handler/things/device/auth5"
-	thingsdevicegateway "gitee.com/i-Things/things/service/apisvr/internal/handler/things/device/gateway"
-	thingsdeviceinfo "gitee.com/i-Things/things/service/apisvr/internal/handler/things/device/info"
-	thingsdeviceinteract "gitee.com/i-Things/things/service/apisvr/internal/handler/things/device/interact"
-	thingsdevicemoduleversion "gitee.com/i-Things/things/service/apisvr/internal/handler/things/device/module/version"
-	thingsdevicemsg "gitee.com/i-Things/things/service/apisvr/internal/handler/things/device/msg"
-	thingsdeviceprofile "gitee.com/i-Things/things/service/apisvr/internal/handler/things/device/profile"
-	thingsgroupdevice "gitee.com/i-Things/things/service/apisvr/internal/handler/things/group/device"
-	thingsgroupinfo "gitee.com/i-Things/things/service/apisvr/internal/handler/things/group/info"
-	thingsotafirmwaredevice "gitee.com/i-Things/things/service/apisvr/internal/handler/things/ota/firmware/device"
-	thingsotafirmwareinfo "gitee.com/i-Things/things/service/apisvr/internal/handler/things/ota/firmware/info"
-	thingsotafirmwarejob "gitee.com/i-Things/things/service/apisvr/internal/handler/things/ota/firmware/job"
-	thingsotamoduleinfo "gitee.com/i-Things/things/service/apisvr/internal/handler/things/ota/module/info"
-	thingsproductcategory "gitee.com/i-Things/things/service/apisvr/internal/handler/things/product/category"
-	thingsproductcustom "gitee.com/i-Things/things/service/apisvr/internal/handler/things/product/custom"
-	thingsproductinfo "gitee.com/i-Things/things/service/apisvr/internal/handler/things/product/info"
-	thingsproductremoteConfig "gitee.com/i-Things/things/service/apisvr/internal/handler/things/product/remoteConfig"
-	thingsproductschema "gitee.com/i-Things/things/service/apisvr/internal/handler/things/product/schema"
-	thingsprotocolinfo "gitee.com/i-Things/things/service/apisvr/internal/handler/things/protocol/info"
-	thingsrulealarminfo "gitee.com/i-Things/things/service/apisvr/internal/handler/things/rule/alarm/info"
-	thingsrulealarmrecord "gitee.com/i-Things/things/service/apisvr/internal/handler/things/rule/alarm/record"
-	thingsrulealarmscene "gitee.com/i-Things/things/service/apisvr/internal/handler/things/rule/alarm/scene"
-	thingsrulesceneinfo "gitee.com/i-Things/things/service/apisvr/internal/handler/things/rule/scene/info"
-	thingsrulescenelog "gitee.com/i-Things/things/service/apisvr/internal/handler/things/rule/scene/log"
-	thingsschemacommon "gitee.com/i-Things/things/service/apisvr/internal/handler/things/schema/common"
-	thingsslotarea "gitee.com/i-Things/things/service/apisvr/internal/handler/things/slot/area"
-	thingsslotuser "gitee.com/i-Things/things/service/apisvr/internal/handler/things/slot/user"
-	thingsuserdevicecollect "gitee.com/i-Things/things/service/apisvr/internal/handler/things/user/device/collect"
-	thingsuserdeviceshare "gitee.com/i-Things/things/service/apisvr/internal/handler/things/user/device/share"
-	"gitee.com/i-Things/things/service/apisvr/internal/svc"
+	thingsdeviceauth "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/device/auth"
+	thingsdeviceauth5 "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/device/auth5"
+	thingsdevicegateway "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/device/gateway"
+	thingsdeviceinfo "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/device/info"
+	thingsdeviceinteract "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/device/interact"
+	thingsdevicemoduleversion "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/device/module/version"
+	thingsdevicemsg "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/device/msg"
+	thingsdeviceprofile "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/device/profile"
+	thingsgroupdevice "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/group/device"
+	thingsgroupinfo "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/group/info"
+	thingsotafirmwaredevice "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/ota/firmware/device"
+	thingsotafirmwareinfo "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/ota/firmware/info"
+	thingsotafirmwarejob "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/ota/firmware/job"
+	thingsotamoduleinfo "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/ota/module/info"
+	thingsproductcategory "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/product/category"
+	thingsproductcustom "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/product/custom"
+	thingsproductinfo "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/product/info"
+	thingsproductremoteConfig "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/product/remoteConfig"
+	thingsproductschema "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/product/schema"
+	thingsprotocolinfo "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/protocol/info"
+	thingsprotocolservice "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/protocol/service"
+	thingsrulealarminfo "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/rule/alarm/info"
+	thingsrulealarmrecord "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/rule/alarm/record"
+	thingsrulealarmscene "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/rule/alarm/scene"
+	thingsrulesceneinfo "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/rule/scene/info"
+	thingsrulescenelog "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/rule/scene/log"
+	thingsschemacommon "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/schema/common"
+	thingsslotarea "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/slot/area"
+	thingsslotuser "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/slot/user"
+	thingsuserdevicecollect "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/user/device/collect"
+	thingsuserdeviceshare "gitee.com/unitedrhino/things/service/apisvr/internal/handler/things/user/device/share"
+	"gitee.com/unitedrhino/things/service/apisvr/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
 )
@@ -857,6 +858,27 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Middleware{serverCtx.CheckTokenWare, serverCtx.InitCtxsWare},
 			[]rest.Route{
 				{
+					// 删除自定义协议服务器
+					Method:  http.MethodPost,
+					Path:    "/delete",
+					Handler: thingsprotocolservice.DeleteHandler(serverCtx),
+				},
+				{
+					// 获取自定义协议服务器信息列表
+					Method:  http.MethodPost,
+					Path:    "/index",
+					Handler: thingsprotocolservice.IndexHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/api/v1/things/protocol/service"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CheckTokenWare, serverCtx.InitCtxsWare},
+			[]rest.Route{
+				{
 					// 新增告警
 					Method:  http.MethodPost,
 					Path:    "/create",
@@ -1124,10 +1146,28 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Handler: thingsuserdeviceshare.IndexHandler(serverCtx),
 				},
 				{
+					// 接受批量分享设备
+					Method:  http.MethodPost,
+					Path:    "/multi-accept",
+					Handler: thingsuserdeviceshare.MultiAcceptHandler(serverCtx),
+				},
+				{
+					// 生成批量分享设备二维码
+					Method:  http.MethodPost,
+					Path:    "/multi-create",
+					Handler: thingsuserdeviceshare.MultiCreateHandler(serverCtx),
+				},
+				{
 					// 批量取消分享设备
 					Method:  http.MethodPost,
 					Path:    "/multi-delete",
 					Handler: thingsuserdeviceshare.MultiDeleteHandler(serverCtx),
+				},
+				{
+					// 获取批量分享的设备列表
+					Method:  http.MethodPost,
+					Path:    "/multi-index",
+					Handler: thingsuserdeviceshare.MultiIndexHandler(serverCtx),
 				},
 				{
 					// 获取分享设备详情

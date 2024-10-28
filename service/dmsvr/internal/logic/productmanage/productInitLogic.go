@@ -2,15 +2,15 @@ package productmanagelogic
 
 import (
 	"context"
-	"gitee.com/i-Things/share/ctxs"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/utils"
-	devicemanagelogic "gitee.com/i-Things/things/service/dmsvr/internal/logic/devicemanage"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/relationDB"
+	"gitee.com/unitedrhino/share/ctxs"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/utils"
+	devicemanagelogic "gitee.com/unitedrhino/things/service/dmsvr/internal/logic/devicemanage"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/relationDB"
 	"sync"
 
-	"gitee.com/i-Things/things/service/dmsvr/internal/svc"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/svc"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -63,7 +63,7 @@ func (l *ProductInitLogic) initOne(in *relationDB.DmProductInfo) error {
 		return err
 	}
 	{ //物模型初始化
-		t, err := l.svcCtx.SchemaRepo.GetData(l.ctx, in.ProductID)
+		t, err := l.svcCtx.SchemaRepo.GetData(l.ctx, devices.Core{ProductID: in.ProductID})
 		if err != nil {
 			l.Errorf("%s.SchemaManaRepo.GetSchemaModel failure,err:%v", utils.FuncName(), err)
 			return err

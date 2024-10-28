@@ -3,13 +3,13 @@ package timerEvent
 import (
 	"context"
 	"database/sql"
-	"gitee.com/i-Things/share/ctxs"
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/share/stores"
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/service/udsvr/internal/domain/scene"
-	rulelogic "gitee.com/i-Things/things/service/udsvr/internal/logic/rule"
-	"gitee.com/i-Things/things/service/udsvr/internal/repo/relationDB"
+	"gitee.com/unitedrhino/share/ctxs"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/share/stores"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/service/udsvr/internal/domain/scene"
+	rulelogic "gitee.com/unitedrhino/things/service/udsvr/internal/logic/rule"
+	"gitee.com/unitedrhino/things/service/udsvr/internal/repo/relationDB"
 	"github.com/observerly/dusk/pkg/dusk"
 	"github.com/zeromicro/go-zero/core/logx"
 	"sync"
@@ -172,18 +172,20 @@ func (l *TimerHandle) SceneTiming() error {
 			ExecRepeat:    stores.CmpOr(stores.CmpBinEq(int64(now.Weekday()), 1), stores.CmpEq(0)), //当天需要执行或只需要执行一次的
 		},
 	}
-	var list []*relationDB.UdSceneIfTrigger
-	for _, v := range triggerF {
-		pos, err := db.FindByFilter(l.ctx, v, nil)
-		if err != nil {
-			l.Error(err)
-			return err
-		}
-		list = append(list, pos...)
+	list, err := db.FindByFilters(l.ctx, triggerF, nil)
+	if err != nil {
+		l.Error(err)
+		return err
 	}
+
 	l.Debugf("scene sceneTrigger now:%v list:%v", now, utils.Fmt(list))
 	var sceneSet sync.Map
 	for _, v := range list {
+		if v.SceneInfo == nil {
+			db.Delete(l.ctx, v.ID)
+			l.Error(v)
+			continue
+		}
 		var po = v
 		ctxs.GoNewCtx(l.ctx, func(ctx context.Context) { //执行任务
 			startTime := time.Now()
@@ -277,7 +279,7 @@ func (l *TimerHandle) SceneTiming() error {
 					log.Errorf("scene err:%v", err)
 					return
 				}
-				err = relationDB.NewSceneInfoRepo(ctx).UpdateWithField(ctx, relationDB.SceneInfoFilter{IDs: []int64{po.SceneID}}, map[string]any{"last_run_time": time.Now()})
+				err = relationDB.NewSceneInfoRepo(ctx).UpdateWithField(ctx, relationDB.SceneInfoFilter{IDs: []int64{po.SceneID}}, map[string]any{"last_run_time": po.LastRunTime})
 				if err != nil {
 					log.Errorf("scene err:%v", err)
 					return

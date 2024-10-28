@@ -2,8 +2,8 @@ package relationDB
 
 import (
 	"context"
-	"gitee.com/i-Things/share/domain/deviceMsg/msgOta"
-	"gitee.com/i-Things/share/stores"
+	"gitee.com/unitedrhino/share/domain/deviceMsg/msgOta"
+	"gitee.com/unitedrhino/share/stores"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"time"
@@ -40,6 +40,7 @@ type OtaFirmwareDeviceFilter struct {
 	WithJob         bool
 	WithFiles       bool
 	IsOnline        int64
+	LastLogin       time.Time
 	RetryCount      *stores.Cmp
 	PushTime        *stores.Cmp
 	LastFailureTime *stores.Cmp
@@ -58,6 +59,9 @@ func (p OtaFirmwareDeviceRepo) fmtFilter(ctx context.Context, f OtaFirmwareDevic
 	}
 	if f.IsOnline != 0 && f.ProductID != "" {
 		subSelect := p.db.WithContext(ctx).Model(&DmDeviceInfo{}).Select("device_name").Where("is_online=? and product_id = ?", f.IsOnline, f.ProductID)
+		if !f.LastLogin.IsZero() {
+			subSelect = subSelect.Where("last_login <= ?", f.LastLogin)
+		}
 		db = db.Where("device_name in (?)", subSelect)
 	}
 	if f.ProductID != "" {

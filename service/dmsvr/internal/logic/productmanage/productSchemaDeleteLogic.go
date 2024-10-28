@@ -2,14 +2,15 @@ package productmanagelogic
 
 import (
 	"context"
-	"gitee.com/i-Things/share/ctxs"
-	"gitee.com/i-Things/share/domain/schema"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/relationDB"
+	"gitee.com/unitedrhino/share/ctxs"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/domain/schema"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/relationDB"
 
-	"gitee.com/i-Things/things/service/dmsvr/internal/svc"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/svc"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -49,7 +50,7 @@ func (l *ProductSchemaDeleteLogic) ProductSchemaDelete(in *dm.ProductSchemaDelet
 		return nil, errors.Parameter.AddMsg("必选物模型不能删除")
 	}
 	if schema.AffordanceType(po.Type) == schema.AffordanceTypeProperty {
-		t, err := l.svcCtx.SchemaRepo.GetData(l.ctx, in.ProductID)
+		t, err := l.svcCtx.SchemaRepo.GetData(l.ctx, devices.Core{ProductID: in.ProductID})
 		if err != nil {
 			return nil, err
 		}
@@ -67,7 +68,7 @@ func (l *ProductSchemaDeleteLogic) ProductSchemaDelete(in *dm.ProductSchemaDelet
 		return nil, err
 	}
 	//清除缓存
-	err = l.svcCtx.SchemaRepo.SetData(l.ctx, in.ProductID, nil)
+	err = l.svcCtx.SchemaRepo.SetData(l.ctx, devices.Core{ProductID: in.ProductID}, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -7,8 +7,8 @@ package userdevice
 import (
 	"context"
 
-	"gitee.com/i-Things/things/service/dmsvr/internal/svc"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/svc"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 
 	"github.com/zeromicro/go-zero/zrpc"
 	"google.golang.org/grpc"
@@ -60,6 +60,7 @@ type (
 	DeviceProfileIndexReq             = dm.DeviceProfileIndexReq
 	DeviceProfileIndexResp            = dm.DeviceProfileIndexResp
 	DeviceProfileReadReq              = dm.DeviceProfileReadReq
+	DeviceShareInfo                   = dm.DeviceShareInfo
 	DeviceTransferReq                 = dm.DeviceTransferReq
 	DeviceTypeCountReq                = dm.DeviceTypeCountReq
 	DeviceTypeCountResp               = dm.DeviceTypeCountResp
@@ -166,6 +167,9 @@ type (
 	ProtocolInfo                      = dm.ProtocolInfo
 	ProtocolInfoIndexReq              = dm.ProtocolInfoIndexReq
 	ProtocolInfoIndexResp             = dm.ProtocolInfoIndexResp
+	ProtocolService                   = dm.ProtocolService
+	ProtocolServiceIndexReq           = dm.ProtocolServiceIndexReq
+	ProtocolServiceIndexResp          = dm.ProtocolServiceIndexResp
 	RemoteConfigCreateReq             = dm.RemoteConfigCreateReq
 	RemoteConfigIndexReq              = dm.RemoteConfigIndexReq
 	RemoteConfigIndexResp             = dm.RemoteConfigIndexResp
@@ -194,7 +198,10 @@ type (
 	UserDeviceShareIndexReq           = dm.UserDeviceShareIndexReq
 	UserDeviceShareIndexResp          = dm.UserDeviceShareIndexResp
 	UserDeviceShareInfo               = dm.UserDeviceShareInfo
+	UserDeviceShareMultiAcceptReq     = dm.UserDeviceShareMultiAcceptReq
 	UserDeviceShareMultiDeleteReq     = dm.UserDeviceShareMultiDeleteReq
+	UserDeviceShareMultiInfo          = dm.UserDeviceShareMultiInfo
+	UserDeviceShareMultiToken         = dm.UserDeviceShareMultiToken
 	UserDeviceShareReadReq            = dm.UserDeviceShareReadReq
 	WithID                            = dm.WithID
 	WithIDChildren                    = dm.WithIDChildren
@@ -220,6 +227,12 @@ type (
 		UserDeviceShareRead(ctx context.Context, in *UserDeviceShareReadReq, opts ...grpc.CallOption) (*UserDeviceShareInfo, error)
 		// 转让设备
 		UserDeviceTransfer(ctx context.Context, in *DeviceTransferReq, opts ...grpc.CallOption) (*Empty, error)
+		// rpc userDeviceOtaGetVersion(UserDeviceOtaGetVersionReq)returns(userDeviceOtaGetVersionResp);
+		UserDeviceShareMultiCreate(ctx context.Context, in *UserDeviceShareMultiInfo, opts ...grpc.CallOption) (*UserDeviceShareMultiToken, error)
+		// 扫码后获取设备列表
+		UserDeivceShareMultiIndex(ctx context.Context, in *UserDeviceShareMultiToken, opts ...grpc.CallOption) (*UserDeviceShareMultiInfo, error)
+		// 接受批量分享的设备
+		UserDeivceShareMultiAccept(ctx context.Context, in *UserDeviceShareMultiAcceptReq, opts ...grpc.CallOption) (*Empty, error)
 	}
 
 	defaultUserDevice struct {
@@ -349,4 +362,37 @@ func (m *defaultUserDevice) UserDeviceTransfer(ctx context.Context, in *DeviceTr
 // 转让设备
 func (d *directUserDevice) UserDeviceTransfer(ctx context.Context, in *DeviceTransferReq, opts ...grpc.CallOption) (*Empty, error) {
 	return d.svr.UserDeviceTransfer(ctx, in)
+}
+
+// rpc userDeviceOtaGetVersion(UserDeviceOtaGetVersionReq)returns(userDeviceOtaGetVersionResp);
+func (m *defaultUserDevice) UserDeviceShareMultiCreate(ctx context.Context, in *UserDeviceShareMultiInfo, opts ...grpc.CallOption) (*UserDeviceShareMultiToken, error) {
+	client := dm.NewUserDeviceClient(m.cli.Conn())
+	return client.UserDeviceShareMultiCreate(ctx, in, opts...)
+}
+
+// rpc userDeviceOtaGetVersion(UserDeviceOtaGetVersionReq)returns(userDeviceOtaGetVersionResp);
+func (d *directUserDevice) UserDeviceShareMultiCreate(ctx context.Context, in *UserDeviceShareMultiInfo, opts ...grpc.CallOption) (*UserDeviceShareMultiToken, error) {
+	return d.svr.UserDeviceShareMultiCreate(ctx, in)
+}
+
+// 扫码后获取设备列表
+func (m *defaultUserDevice) UserDeivceShareMultiIndex(ctx context.Context, in *UserDeviceShareMultiToken, opts ...grpc.CallOption) (*UserDeviceShareMultiInfo, error) {
+	client := dm.NewUserDeviceClient(m.cli.Conn())
+	return client.UserDeivceShareMultiIndex(ctx, in, opts...)
+}
+
+// 扫码后获取设备列表
+func (d *directUserDevice) UserDeivceShareMultiIndex(ctx context.Context, in *UserDeviceShareMultiToken, opts ...grpc.CallOption) (*UserDeviceShareMultiInfo, error) {
+	return d.svr.UserDeivceShareMultiIndex(ctx, in)
+}
+
+// 接受批量分享的设备
+func (m *defaultUserDevice) UserDeivceShareMultiAccept(ctx context.Context, in *UserDeviceShareMultiAcceptReq, opts ...grpc.CallOption) (*Empty, error) {
+	client := dm.NewUserDeviceClient(m.cli.Conn())
+	return client.UserDeivceShareMultiAccept(ctx, in, opts...)
+}
+
+// 接受批量分享的设备
+func (d *directUserDevice) UserDeivceShareMultiAccept(ctx context.Context, in *UserDeviceShareMultiAcceptReq, opts ...grpc.CallOption) (*Empty, error) {
+	return d.svr.UserDeivceShareMultiAccept(ctx, in)
 }

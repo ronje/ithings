@@ -3,22 +3,22 @@ package deviceMsgEvent
 import (
 	"context"
 	"encoding/json"
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/domain/deviceAuth"
-	"gitee.com/i-Things/share/domain/deviceMsg"
-	"gitee.com/i-Things/share/domain/deviceMsg/msgGateway"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/service/dmsvr/internal/domain/deviceLog"
-	"gitee.com/i-Things/things/service/dmsvr/internal/domain/deviceStatus"
-	devicemanagelogic "gitee.com/i-Things/things/service/dmsvr/internal/logic/devicemanage"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/cache"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/relationDB"
-	devicemanage "gitee.com/i-Things/things/service/dmsvr/internal/server/devicemanage"
-	productmanage "gitee.com/i-Things/things/service/dmsvr/internal/server/productmanage"
-	"gitee.com/i-Things/things/service/dmsvr/internal/svc"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/domain/deviceAuth"
+	"gitee.com/unitedrhino/share/domain/deviceMsg"
+	"gitee.com/unitedrhino/share/domain/deviceMsg/msgGateway"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/domain/deviceLog"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/domain/deviceStatus"
+	devicemanagelogic "gitee.com/unitedrhino/things/service/dmsvr/internal/logic/devicemanage"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/cache"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/relationDB"
+	devicemanage "gitee.com/unitedrhino/things/service/dmsvr/internal/server/devicemanage"
+	productmanage "gitee.com/unitedrhino/things/service/dmsvr/internal/server/productmanage"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/svc"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 	"github.com/zeromicro/go-zero/core/logx"
 	"time"
 )
@@ -143,6 +143,16 @@ func (l *GatewayLogic) HandleRegister(msg *deviceMsg.PublishMsg, resp *msgGatewa
 				continue
 			}
 		}
+		if di == nil {
+			di, err = l.svcCtx.DeviceCache.GetData(l.ctx, devices.Core{
+				ProductID:  v.ProductID,
+				DeviceName: v.DeviceName,
+			})
+			if err != nil {
+				resp.AddStatus(err)
+				continue
+			}
+		}
 		c, err := relationDB.NewGatewayDeviceRepo(l.ctx).FindOneByFilter(l.ctx, relationDB.GatewayDeviceFilter{
 			SubDevice: &devices.Core{
 				ProductID:  v.ProductID,
@@ -195,7 +205,8 @@ func (l *GatewayLogic) HandleTopo(msg *deviceMsg.PublishMsg) (respMsg *msgGatewa
 				return &resp, err
 			}
 			_, err = devicemanage.NewDeviceManageServer(l.svcCtx).DeviceGatewayMultiCreate(l.ctx, &dm.DeviceGatewayMultiCreateReq{
-				IsAuthSign: true,
+				IsAuthSign:  true,
+				IsNotNotify: true,
 				Gateway: &dm.DeviceCore{
 					ProductID:  msg.ProductID,
 					DeviceName: msg.DeviceName,
@@ -214,13 +225,15 @@ func (l *GatewayLogic) HandleTopo(msg *deviceMsg.PublishMsg) (respMsg *msgGatewa
 					ProductID:  msg.ProductID,
 					DeviceName: msg.DeviceName,
 				},
-				List: ToDmDevicesCore(l.dreq.Payload.Devices),
+				IsNotNotify: true,
+				List:        ToDmDevicesCore(l.dreq.Payload.Devices),
 			})
 			if err != nil {
 				resp.AddStatus(err)
 				return &resp, err
 			}
 			resp.Payload = &msgGateway.GatewayPayload{Devices: l.dreq.Payload.Devices.GetCore()}
+			return &resp, nil
 		case deviceMsg.Found:
 			var devs []*devices.Core
 			devs, err = devicemanagelogic.FilterCanBindSubDevices(l.ctx, l.svcCtx, &devices.Core{

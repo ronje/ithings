@@ -2,9 +2,9 @@ package relationDB
 
 import (
 	"context"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/stores"
-	"gitee.com/i-Things/things/service/udsvr/internal/domain/scene"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/stores"
+	"gitee.com/unitedrhino/things/service/udsvr/internal/domain/scene"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -25,24 +25,25 @@ func NewSceneIfTriggerRepo(in any) *SceneIfTriggerRepo {
 }
 
 type SceneIfTriggerFilter struct {
-	ID               int64
-	SceneID          int64
-	Status           int64
-	ExecAt           *stores.Cmp
-	LastRunTime      *stores.Cmp
-	ExecRepeat       *stores.Cmp
-	RepeatType       scene.RepeatType
-	ExecLoopStart    *stores.Cmp
-	ExecLoopEnd      *stores.Cmp
-	ExecType         *stores.Cmp
-	Type             string
-	ProjectID        *stores.Cmp
-	AreaID           *stores.Cmp
-	Device           *devices.Core
-	DataID           string
-	FirstTriggerTime *stores.Cmp
-	StateKeepType    scene.StateKeepType
-	StateKeepValue   *stores.Cmp
+	ID                int64
+	SceneID           int64
+	Status            int64
+	ExecAt            *stores.Cmp
+	LastRunTime       *stores.Cmp
+	ExecRepeat        *stores.Cmp
+	RepeatType        scene.RepeatType
+	ExecLoopStart     *stores.Cmp
+	ExecLoopEnd       *stores.Cmp
+	ExecType          *stores.Cmp
+	Type              string
+	ProjectID         *stores.Cmp
+	AreaID            *stores.Cmp
+	Device            *devices.Core
+	DataID            string
+	TriggerDeviceType scene.TriggerDeviceType
+	FirstTriggerTime  *stores.Cmp
+	StateKeepType     scene.StateKeepType
+	StateKeepValue    *stores.Cmp
 }
 
 func (p SceneIfTriggerRepo) fmtFilter(ctx context.Context, f SceneIfTriggerFilter) *gorm.DB {
@@ -76,10 +77,17 @@ func (p SceneIfTriggerRepo) fmtFilter(ctx context.Context, f SceneIfTriggerFilte
 		db = db.Where("scene_id = ?", f.SceneID)
 	}
 	if f.Device != nil {
-		db = db.Where("device_select_type=? and device_product_id=? and device_device_name=? and device_data_id=?",
-			scene.SelectDeviceFixed, f.Device.ProductID, f.Device.DeviceName, f.DataID).
-			Or("device_select_type=? and device_product_id=? and device_data_id=?", scene.SelectorDeviceAll,
-				f.Device.ProductID, f.DataID)
+		if f.DataID != "" {
+			db = db.Where("device_select_type=? and device_product_id=? and device_device_name=? and device_data_id=?",
+				scene.SelectDeviceFixed, f.Device.ProductID, f.Device.DeviceName, f.DataID).
+				Or("device_select_type=? and device_product_id=? and device_data_id=?", scene.SelectorDeviceAll,
+					f.Device.ProductID, f.DataID)
+		} else if f.TriggerDeviceType != "" {
+			db = db.Where("device_select_type=? and device_type=? and device_product_id=? and device_device_name=? ",
+				scene.SelectDeviceFixed, f.TriggerDeviceType, f.Device.ProductID, f.Device.DeviceName).
+				Or("device_select_type=? and device_type=?  and device_product_id=? ", scene.SelectorDeviceAll, f.TriggerDeviceType,
+					f.Device.ProductID)
+		}
 	}
 	return db
 }
@@ -101,6 +109,24 @@ func (p SceneIfTriggerRepo) FindOneByFilter(ctx context.Context, f SceneIfTrigge
 func (p SceneIfTriggerRepo) FindByFilter(ctx context.Context, f SceneIfTriggerFilter, page *stores.PageInfo) ([]*UdSceneIfTrigger, error) {
 	var results []*UdSceneIfTrigger
 	db := p.fmtFilter(ctx, f).Model(&UdSceneIfTrigger{})
+	db = page.ToGorm(db)
+	err := db.Preload("SceneInfo").Preload("SceneInfo.Actions").Find(&results).Error
+	if err != nil {
+		return nil, stores.ErrFmt(err)
+	}
+	return results, nil
+}
+
+func (p SceneIfTriggerRepo) FindByFilters(ctx context.Context, f []SceneIfTriggerFilter, page *stores.PageInfo) ([]*UdSceneIfTrigger, error) {
+	var results []*UdSceneIfTrigger
+	if len(f) == 0 {
+		return results, nil
+	}
+	db := p.fmtFilter(ctx, f[0]).Model(&UdSceneIfTrigger{})
+	for _, ff := range f[1:] {
+		db = db.Or(p.fmtFilter(ctx, ff))
+	}
+
 	db = page.ToGorm(db)
 	err := db.Preload("SceneInfo").Preload("SceneInfo.Actions").Find(&results).Error
 	if err != nil {

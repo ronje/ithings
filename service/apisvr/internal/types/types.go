@@ -35,7 +35,7 @@ type AlarmRecord struct {
 	ID          int64  `json:"id,optional"`
 	AlarmID     int64  `json:"alarmID"`
 	AlarmName   string `json:"alarmName"`
-	TriggerType int64  `json:"triggerType"`
+	TriggerType string `json:"triggerType"` //触发类型 device:设备触发 timer:定时触发 weather:天气触发
 	ProductID   string `json:"productID"`   //触发产品id
 	DeviceName  string `json:"deviceName"`  //触发设备名称
 	SceneName   string `json:"sceneName"`   //场景名称
@@ -44,6 +44,8 @@ type AlarmRecord struct {
 	LastAlarm   int64  `json:"lastAlarm"`   //最新告警时间
 	CreatedTime int64  `json:"createdTime"` //创建时间
 	DealStatus  int64  `json:"dealStatus"`  //告警记录状态（1告警中 2忽略 3正在处理 4已处理）
+	AlarmCount  int64  `json:"alarmCount"`  //告警次数
+	Desc        string `json:"desc"`        //描述
 }
 
 type AlarmRecordDealReq struct {
@@ -710,16 +712,18 @@ type DeviceMultiImportResp struct {
 }
 
 type DeviceMultiImportRow struct {
-	Row         int64  `json:"row"`         //【提示】数据所在表格行
-	ProductID   string `json:"productID"`   //【必填】产品ID
-	DeviceName  string `json:"deviceName"`  //【必填】设备名称
-	DeviceAlias string `json:"deviceAlias"` //【选填】设备别名
-	Secret      string `json:"secret"`      //【选填】设备秘钥
-	LogLevel    string `json:"logLevel"`    //【选填】日志级别（关闭/错误/告警/信息/调试）
-	Tags        string `json:"tags"`        //【选填】设备标签（格式k1:v1;k2:v2;...）
-	Position    string `json:"position"`    //【选填】设备位置百度坐标（格式:经,纬）
-	Address     string `json:"address"`     //【选填】设备所在详细地址
-	Tips        string `json:"tips"`        //【提示】模板使用提示
+	Row               int64  `json:"row"`               //【提示】数据所在表格行
+	ProductID         string `json:"productID"`         //【必填】产品ID
+	DeviceName        string `json:"deviceName"`        //【必填】设备名称
+	DeviceAlias       string `json:"deviceAlias"`       //【选填】设备别名
+	Secret            string `json:"secret"`            //【选填】设备秘钥
+	GatewayProductID  string `json:"gatewayProductID"`  //【选填】绑定的网关产品ID(网关的设备ID全局唯一可不填)
+	GatewayDeviceName string `json:"gatewayDeviceName"` //【选填】绑定的网关设备ID
+	LogLevel          string `json:"logLevel"`          //【选填】日志级别（关闭/错误/告警/信息/调试）
+	Tags              string `json:"tags"`              //【选填】设备标签（格式k1:v1;k2:v2;...）
+	Position          string `json:"position"`          //【选填】设备位置百度坐标（格式:经,纬）
+	Address           string `json:"address"`           //【选填】设备所在详细地址
+	Tips              string `json:"tips"`              //【提示】模板使用提示
 }
 
 type DeviceProfile struct {
@@ -753,6 +757,14 @@ type DeviceRegisterReq struct {
 type DeviceRegisterResp struct {
 	Len     int64  `json:"len"` //payload加密前信息的长度
 	Payload string `json:"payload"`
+}
+
+type DeviceShareInfo struct {
+	ProductID   string `json:"productID"` //产品ID
+	ProductName string `json:"productName,optional,omitempty"`
+	ProductImg  string `json:"productImg,optional,omitempty"` //产品图片
+	DeviceName  string `json:"deviceName"`                    //设备名称
+	DeviceAlias string `json:"deviceAlias,optional"`          //设备别名 读写
 }
 
 type FirmwareCreateReq struct {
@@ -1373,6 +1385,26 @@ type ProtocolInfoIndexResp struct {
 	Total int64           `json:"total,optional"` //拥有的总数
 }
 
+type ProtocolService struct {
+	ID          int64  `json:"id"`
+	Code        string `json:"code"`        //协议code
+	IP          string `json:"ip"`          // 协议服务的ip地址
+	Port        int64  `json:"port"`        //监听的端口,如果没有填0即可
+	Status      int64  `json:"status"`      //服务状态
+	UpdatedTime int64  `json:"updatedTime"` //更新时间
+	CreatedTime int64  `json:"createdTime"` //首次加入时间
+}
+
+type ProtocolServiceIndexReq struct {
+	Page *PageInfo `json:"page,optional"` //分页信息,只获取一个则不填
+	Code string    `json:"code"`          //
+}
+
+type ProtocolServiceIndexResp struct {
+	List  []*ProtocolService `json:"list"`           //自定义协议信息
+	Total int64              `json:"total,optional"` //拥有的总数
+}
+
 type SceneFlowInfo struct {
 	Type    string `json:"type"`           //流程类型 then
 	SubType string `json:"subType"`        //子类型 设备执行
@@ -1619,9 +1651,36 @@ type UserDeviceShareInfo struct {
 	CreatedTime       int64                 `json:"createdTime,optional"`
 }
 
+type UserDeviceShareMultiAcceptInfo struct {
+	ShareToken string        `json:"shareToken,optional"` //分享后的用于生成二维码的字符串
+	Devices    []*DeviceCore `json:"devices,optional"`    //批量设备信息
+}
+
 type UserDeviceShareMultiDeleteReq struct {
 	IDs       []int64 `json:"ids,optional"`
 	ProjectID int64   `json:"projectID,optional"`
+}
+
+type UserDeviceShareMultiIndexResp struct {
+	Devices     []*DeviceShareInfo    `json:"devices,optional"`    //批量设备信息
+	AuthType    int64                 `json:"authType,optional"`   //授权类型:1:全部授权 2:部分授权
+	SchemaPerm  map[string]*SharePerm `json:"schemaPerm,optional"` //普通功能权限 2:读写权限 3读权限
+	AccessPerm  map[string]*SharePerm `json:"accessPerm,optional"` //系统功能权限 2:读写权限 3读权限
+	ExpTime     int64                 `json:"expTime,optional"`    //到期时间
+	CreatedTime int64                 `json:"createdTime,optional"`
+}
+
+type UserDeviceShareMultiInfo struct {
+	Devices     []*DeviceCore         `json:"devices,optional"`    //批量设备信息
+	AuthType    int64                 `json:"authType,optional"`   //授权类型:1:全部授权 2:部分授权
+	SchemaPerm  map[string]*SharePerm `json:"schemaPerm,optional"` //普通功能权限 2:读写权限 3读权限
+	AccessPerm  map[string]*SharePerm `json:"accessPerm,optional"` //系统功能权限 2:读写权限 3读权限
+	ExpTime     int64                 `json:"expTime,optional"`    //到期时间
+	CreatedTime int64                 `json:"createdTime,optional"`
+}
+
+type UserDeviceShareMultiToken struct {
+	ShareToken string `json:"shareToken,optional"`
 }
 
 type UserDeviceShareReadReq struct {

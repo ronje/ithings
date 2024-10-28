@@ -3,26 +3,26 @@ package deviceinteractlogic
 import (
 	"context"
 	"encoding/json"
-	"gitee.com/i-Things/core/service/syssvr/sysExport"
-	"gitee.com/i-Things/share/ctxs"
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/domain/application"
-	"gitee.com/i-Things/share/domain/deviceMsg"
-	"gitee.com/i-Things/share/domain/deviceMsg/msgThing"
-	"gitee.com/i-Things/share/domain/schema"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/service/dmsvr/internal/domain/deviceLog"
-	"gitee.com/i-Things/things/service/dmsvr/internal/domain/shadow"
-	"gitee.com/i-Things/things/service/dmsvr/internal/logic"
-	devicemanagelogic "gitee.com/i-Things/things/service/dmsvr/internal/logic/devicemanage"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/cache"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/relationDB"
+	"gitee.com/unitedrhino/core/service/syssvr/sysExport"
+	"gitee.com/unitedrhino/share/ctxs"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/domain/application"
+	"gitee.com/unitedrhino/share/domain/deviceMsg"
+	"gitee.com/unitedrhino/share/domain/deviceMsg/msgThing"
+	"gitee.com/unitedrhino/share/domain/schema"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/domain/deviceLog"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/domain/shadow"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/logic"
+	devicemanagelogic "gitee.com/unitedrhino/things/service/dmsvr/internal/logic/devicemanage"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/cache"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/relationDB"
 	"time"
 
-	"gitee.com/i-Things/things/service/dmsvr/internal/svc"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/svc"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -41,9 +41,9 @@ func NewPropertyControlSendLogic(ctx context.Context, svcCtx *svc.ServiceContext
 		Logger: logx.WithContext(ctx),
 	}
 }
-func (l *PropertyControlSendLogic) initMsg(productID string) error {
+func (l *PropertyControlSendLogic) initMsg(dev devices.Core) error {
 	var err error
-	l.model, err = l.svcCtx.SchemaRepo.GetData(l.ctx, productID)
+	l.model, err = l.svcCtx.SchemaRepo.GetData(l.ctx, dev)
 	if err != nil {
 		return errors.System.AddDetail(err)
 	}
@@ -69,7 +69,7 @@ func (l *PropertyControlSendLogic) PropertyControlSend(in *dm.PropertyControlSen
 			return nil, err
 		}
 	}
-	err = l.initMsg(in.ProductID)
+	err = l.initMsg(devices.Core{ProductID: in.ProductID, DeviceName: in.DeviceName})
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func (l *PropertyControlSendLogic) PropertyControlSend(in *dm.PropertyControlSen
 	}
 	if in.ShadowControl == shadow.ControlOnlyCloud {
 		//插入多条设备物模型属性数据
-		err = l.svcCtx.SchemaManaRepo.InsertPropertiesData(l.ctx, l.model, in.ProductID, in.DeviceName, params, time.Now())
+		err = l.svcCtx.SchemaManaRepo.InsertPropertiesData(l.ctx, l.model, in.ProductID, in.DeviceName, params, time.Now(), msgThing.Optional{})
 		if err != nil {
 			l.Errorf("%s.InsertPropertyData err=%+v", utils.FuncName(), err)
 			return nil, err
@@ -177,7 +177,7 @@ func (l *PropertyControlSendLogic) PropertyControlSend(in *dm.PropertyControlSen
 	}()
 	if in.ShadowControl == shadow.ControlOnlyCloudWithLog {
 		//插入多条设备物模型属性数据
-		err = l.svcCtx.SchemaManaRepo.InsertPropertiesData(l.ctx, l.model, in.ProductID, in.DeviceName, params, time.Now())
+		err = l.svcCtx.SchemaManaRepo.InsertPropertiesData(l.ctx, l.model, in.ProductID, in.DeviceName, params, time.Now(), msgThing.Optional{})
 		if err != nil {
 			l.Errorf("%s.InsertPropertyData err=%+v", utils.FuncName(), err)
 			return nil, err
@@ -237,6 +237,7 @@ func (l *PropertyControlSendLogic) PropertyControlSend(in *dm.PropertyControlSen
 		return true
 	})
 	if err != nil {
+		l.Error(err)
 		return nil, errors.Fmt(err).WithMsg("指令发送失败")
 	}
 

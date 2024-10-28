@@ -4,19 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gitee.com/i-Things/core/service/timed/timedjobsvr/client/timedmanage"
-	"gitee.com/i-Things/share/ctxs"
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/domain/application"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/eventBus"
-	"gitee.com/i-Things/share/events/topics"
-	"gitee.com/i-Things/share/tools"
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/service/udsvr/internal/event/timerEvent"
-	"gitee.com/i-Things/things/service/udsvr/internal/repo/relationDB"
-	"gitee.com/i-Things/things/service/udsvr/internal/svc"
+	"gitee.com/unitedrhino/core/service/timed/timedjobsvr/client/timedmanage"
+	"gitee.com/unitedrhino/share/ctxs"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/domain/application"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/eventBus"
+	"gitee.com/unitedrhino/share/events/topics"
+	"gitee.com/unitedrhino/share/tools"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
+	"gitee.com/unitedrhino/things/service/udsvr/internal/domain/scene"
+	"gitee.com/unitedrhino/things/service/udsvr/internal/event/timerEvent"
+	"gitee.com/unitedrhino/things/service/udsvr/internal/repo/relationDB"
+	"gitee.com/unitedrhino/things/service/udsvr/internal/svc"
 	"github.com/spf13/cast"
 	"github.com/zeromicro/go-zero/core/logx"
 	"sync"
@@ -145,6 +147,67 @@ func InitEventBus(svcCtx *svc.ServiceContext) {
 		return th.SceneThingPropertyReport(stu)
 	})
 	logx.Must(err)
+	err = svcCtx.FastEvent.QueueSubscribe(topics.ApplicationDeviceStatusAllDevice, func(ctx context.Context, t time.Time, body []byte) error {
+		if t.Before(time.Now().Add(-time.Second * 2)) { //2秒之前的跳过
+			return nil
+		}
+		th := timerEvent.NewSceneHandle(ctxs.WithRoot(ctx), svcCtx)
+		var stu application.ConnectMsg
+		err := utils.Unmarshal(body, &stu)
+		if err != nil {
+			logx.WithContext(ctx).Errorf("Subscribe.QueueSubscribe.Unmarshal body:%v err:%v", string(body), err)
+			return err
+		}
+		return th.SceneDeviceOnline(stu)
+	})
+	logx.Must(err)
+
+	{
+		err = svcCtx.FastEvent.QueueSubscribe(eventBus.SysCoreOpsWorkOrderFinish, func(ctx context.Context, t time.Time, body []byte) error {
+			pi := cast.ToInt64(string(body))
+			logx.WithContext(ctx).Infof("SysProjectInfoDelete value:%v err:%v", string(body), err)
+			if pi == 0 {
+				return nil
+			}
+			ctx = ctxs.WithRoot(ctx)
+			ar, err := relationDB.NewAlarmRecordRepo(ctx).FindOneByFilter(ctx, relationDB.AlarmRecordFilter{WorkOrderID: pi})
+			if err != nil {
+				logx.WithContext(ctx).Error(err)
+				return nil
+			}
+			ar.DealStatus = scene.AlarmDealStatusProcessed
+			err = relationDB.NewAlarmRecordRepo(ctx).Update(ctx, ar)
+			if err != nil {
+				logx.WithContext(ctx).Error(err)
+				return nil
+			}
+			if ar.DeviceName != "" && ar.ProductID != "" {
+				di, err := svcCtx.DeviceCache.GetData(ctx, devices.Core{ProductID: ar.ProductID, DeviceName: ar.DeviceName})
+				if err != nil {
+					logx.WithContext(ctx).Error(err)
+					return nil
+				}
+				total, err := relationDB.NewAlarmRecordRepo(ctx).CountByFilter(ctx, relationDB.AlarmRecordFilter{
+					ProductID:    ar.ProductID,
+					DeviceName:   ar.DeviceName,
+					DealStatuses: []int64{scene.AlarmDealStatusWaring, scene.AlarmDealStatusInHand},
+				})
+				if err != nil {
+					logx.WithContext(ctx).Error(err)
+					return nil
+				}
+				if total == 0 && di.Status == def.DeviceStatusWarming {
+					_, err := svcCtx.DeviceM.DeviceInfoUpdate(ctx, &dm.DeviceInfo{ProductID: ar.ProductID, DeviceName: ar.DeviceName, Status: di.IsOnline + 1})
+					if err != nil {
+						logx.WithContext(ctx).Error(err)
+						return nil
+					}
+				}
+			}
+			return nil
+		})
+		logx.Must(err)
+	}
 	err = svcCtx.FastEvent.Start()
 	logx.Must(err)
 }
@@ -153,7 +216,7 @@ func TimerInit(svcCtx *svc.ServiceContext) {
 	ctx := context.Background()
 	{
 		_, err := svcCtx.TimedM.TaskInfoCreate(ctx, &timedmanage.TaskInfo{
-			GroupCode: def.TimedIThingsQueueGroupCode,                                   //组编码
+			GroupCode: def.TimedUnitedRhinoQueueGroupCode,                               //组编码
 			Type:      1,                                                                //任务类型 1 定时任务 2 延时任务
 			Name:      "iThings规则引擎定时任务",                                                // 任务名称
 			Code:      "iThingsRuleTimer",                                               //任务编码
@@ -168,7 +231,7 @@ func TimerInit(svcCtx *svc.ServiceContext) {
 	}
 	{
 		_, err := svcCtx.TimedM.TaskInfoCreate(ctx, &timedmanage.TaskInfo{
-			GroupCode: def.TimedIThingsQueueGroupCode,                                             //组编码
+			GroupCode: def.TimedUnitedRhinoQueueGroupCode,                                         //组编码
 			Type:      1,                                                                          //任务类型 1 定时任务 2 延时任务
 			Name:      "iThings规则引擎定时任务10分钟",                                                      // 任务名称
 			Code:      "UdRuleTimerTenMinutes",                                                    //任务编码

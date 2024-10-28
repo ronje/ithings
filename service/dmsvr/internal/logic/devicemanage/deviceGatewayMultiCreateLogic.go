@@ -4,17 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/domain/deviceAuth"
-	"gitee.com/i-Things/share/domain/deviceMsg"
-	"gitee.com/i-Things/share/domain/deviceMsg/msgGateway"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/service/dmsvr/internal/logic"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/relationDB"
-	"gitee.com/i-Things/things/service/dmsvr/internal/svc"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+	"gitee.com/unitedrhino/share/ctxs"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/domain/deviceAuth"
+	"gitee.com/unitedrhino/share/domain/deviceMsg"
+	"gitee.com/unitedrhino/share/domain/deviceMsg/msgGateway"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/logic"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/relationDB"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/svc"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 	"github.com/spf13/cast"
 	"time"
 
@@ -94,12 +95,17 @@ func (l *DeviceGatewayMultiCreateLogic) DeviceGatewayMultiCreate(in *dm.DeviceGa
 	if err != nil {
 		return nil, errors.Database.AddDetail(err)
 	}
-	_, err = NewDeviceInfoMultiUpdateLogic(l.ctx, l.svcCtx).DeviceInfoMultiUpdate(&dm.DeviceInfoMultiUpdateReq{
-		Devices: utils.CopySlice[dm.DeviceCore](devicesDos),
-		AreaID:  gd.AreaID,
+	_, err = NewDeviceTransferLogic(ctxs.WithRoot(l.ctx), l.svcCtx).DeviceTransfer(&dm.DeviceTransferReq{
+		TransferTo: DeviceTransferToProject,
+		Devices:    utils.CopySlice[dm.DeviceCore](devicesDos),
+		AreaID:     gd.AreaID,
+		ProjectID:  gd.ProjectID,
 	})
 	if err != nil {
 		l.Error(err)
+	}
+	if in.IsNotNotify {
+		return &dm.Empty{}, nil
 	}
 	req := &msgGateway.Msg{
 		CommonMsg: *deviceMsg.NewRespCommonMsg(l.ctx, deviceMsg.Change, devices.GenMsgToken(l.ctx, l.svcCtx.NodeID)).AddStatus(errors.OK),

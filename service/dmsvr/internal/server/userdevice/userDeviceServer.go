@@ -7,9 +7,9 @@ package server
 import (
 	"context"
 
-	"gitee.com/i-Things/things/service/dmsvr/internal/logic/userdevice"
-	"gitee.com/i-Things/things/service/dmsvr/internal/svc"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/logic/userdevice"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/svc"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 )
 
 type UserDeviceServer struct {
@@ -79,4 +79,22 @@ func (s *UserDeviceServer) UserDeviceShareRead(ctx context.Context, in *dm.UserD
 func (s *UserDeviceServer) UserDeviceTransfer(ctx context.Context, in *dm.DeviceTransferReq) (*dm.Empty, error) {
 	l := userdevicelogic.NewUserDeviceTransferLogic(ctx, s.svcCtx)
 	return l.UserDeviceTransfer(in)
+}
+
+// rpc userDeviceOtaGetVersion(UserDeviceOtaGetVersionReq)returns(userDeviceOtaGetVersionResp);
+func (s *UserDeviceServer) UserDeviceShareMultiCreate(ctx context.Context, in *dm.UserDeviceShareMultiInfo) (*dm.UserDeviceShareMultiToken, error) {
+	l := userdevicelogic.NewUserDeviceShareMultiCreateLogic(ctx, s.svcCtx)
+	return l.UserDeviceShareMultiCreate(in)
+}
+
+// 扫码后获取设备列表
+func (s *UserDeviceServer) UserDeivceShareMultiIndex(ctx context.Context, in *dm.UserDeviceShareMultiToken) (*dm.UserDeviceShareMultiInfo, error) {
+	l := userdevicelogic.NewUserDeivceShareMultiIndexLogic(ctx, s.svcCtx)
+	return l.UserDeivceShareMultiIndex(in)
+}
+
+// 接受批量分享的设备
+func (s *UserDeviceServer) UserDeivceShareMultiAccept(ctx context.Context, in *dm.UserDeviceShareMultiAcceptReq) (*dm.Empty, error) {
+	l := userdevicelogic.NewUserDeivceShareMultiAcceptLogic(ctx, s.svcCtx)
+	return l.UserDeivceShareMultiAccept(in)
 }

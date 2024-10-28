@@ -2,9 +2,9 @@ package relationDB
 
 import (
 	"context"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/stores"
-	"gitee.com/i-Things/things/service/dmsvr/internal/domain/shadow"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/stores"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/domain/shadow"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -42,9 +42,9 @@ func (p *ShadowRepo) fmtFilter(ctx context.Context, f shadow.Filter) *gorm.DB {
 	}
 	if f.UpdatedDeviceStatus != 0 {
 		if f.UpdatedDeviceStatus == shadow.UpdatedDevice {
-			db = db.Where("updatedDeviceTime is not null")
+			db = db.Where("updated_device_time is not null")
 		} else {
-			db = db.Where("updatedDeviceTime is null")
+			db = db.Where("updated_device_time is null")
 		}
 	}
 	return db

@@ -3,14 +3,13 @@ package rulelogic
 import (
 	"context"
 	"database/sql"
-	"gitee.com/i-Things/share/oss/common"
-	"gitee.com/i-Things/share/stores"
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/service/udsvr/internal/domain"
-	"gitee.com/i-Things/things/service/udsvr/internal/domain/scene"
-	"gitee.com/i-Things/things/service/udsvr/internal/repo/relationDB"
-	"gitee.com/i-Things/things/service/udsvr/internal/svc"
-	"gitee.com/i-Things/things/service/udsvr/pb/ud"
+	"gitee.com/unitedrhino/share/oss/common"
+	"gitee.com/unitedrhino/share/stores"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/service/udsvr/internal/domain/scene"
+	"gitee.com/unitedrhino/things/service/udsvr/internal/repo/relationDB"
+	"gitee.com/unitedrhino/things/service/udsvr/internal/svc"
+	"gitee.com/unitedrhino/things/service/udsvr/pb/ud"
 	"github.com/zeromicro/go-zero/core/logx"
 	"time"
 )
@@ -75,21 +74,17 @@ func ToSceneTriggerPo(si *scene.Info, in *scene.Trigger) *relationDB.UdSceneIfTr
 		return nil
 	}
 	now := time.Now()
-	var execAt int64
-	if in.Timer != nil {
-		execAt = in.Timer.ExecAt
-	}
 	return &relationDB.UdSceneIfTrigger{
 		SceneID: si.ID,
 		Type:    in.Type,
 		Status:  si.Status,
 		LastRunTime: sql.NullTime{
-			Time:  domain.GenLastRunTime(now, execAt),
+			Time:  in.Timer.GenLastRunTime(now),
 			Valid: true,
 		},
 		Order:     in.Order,
 		ProjectID: stores.ProjectID(si.ProjectID),
-		AreaID:    stores.AreaID(in.AreaID),
+		AreaID:    stores.AreaID(si.AreaID),
 		Device:    ToSceneTriggerDevicePo(in.Device),
 		Timer:     ToSceneTriggerTimerPo(si, in.Timer),
 		Weather:   utils.Copy2[relationDB.UdSceneTriggerWeather](in.Weather),

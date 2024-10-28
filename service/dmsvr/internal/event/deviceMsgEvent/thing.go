@@ -4,27 +4,27 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"gitee.com/i-Things/core/service/syssvr/sysExport"
-	"gitee.com/i-Things/core/service/timed/timedjobsvr/client/timedmanage"
-	"gitee.com/i-Things/share/ctxs"
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/domain/application"
-	"gitee.com/i-Things/share/domain/deviceAuth"
-	"gitee.com/i-Things/share/domain/deviceMsg"
-	"gitee.com/i-Things/share/domain/deviceMsg/msgOta"
-	"gitee.com/i-Things/share/domain/deviceMsg/msgThing"
-	"gitee.com/i-Things/share/domain/schema"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/service/dmsvr/internal/domain/deviceLog"
-	"gitee.com/i-Things/things/service/dmsvr/internal/domain/deviceStatus"
-	"gitee.com/i-Things/things/service/dmsvr/internal/domain/shadow"
-	devicemanagelogic "gitee.com/i-Things/things/service/dmsvr/internal/logic/devicemanage"
-	otamanagelogic "gitee.com/i-Things/things/service/dmsvr/internal/logic/otamanage"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/cache"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/relationDB"
-	"gitee.com/i-Things/things/service/dmsvr/internal/svc"
+	"gitee.com/unitedrhino/core/service/syssvr/sysExport"
+	"gitee.com/unitedrhino/core/service/timed/timedjobsvr/client/timedmanage"
+	"gitee.com/unitedrhino/share/ctxs"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/domain/application"
+	"gitee.com/unitedrhino/share/domain/deviceAuth"
+	"gitee.com/unitedrhino/share/domain/deviceMsg"
+	"gitee.com/unitedrhino/share/domain/deviceMsg/msgOta"
+	"gitee.com/unitedrhino/share/domain/deviceMsg/msgThing"
+	"gitee.com/unitedrhino/share/domain/schema"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/domain/deviceLog"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/domain/deviceStatus"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/domain/shadow"
+	devicemanagelogic "gitee.com/unitedrhino/things/service/dmsvr/internal/logic/devicemanage"
+	otamanagelogic "gitee.com/unitedrhino/things/service/dmsvr/internal/logic/otamanage"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/cache"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/relationDB"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/svc"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cast"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -50,7 +50,7 @@ func NewThingLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ThingLogic 
 
 func (l *ThingLogic) initMsg(msg *deviceMsg.PublishMsg) error {
 	var err error
-	l.schema, err = l.svcCtx.SchemaRepo.GetData(l.ctx, msg.ProductID)
+	l.schema, err = l.svcCtx.SchemaRepo.GetData(l.ctx, devices.Core{ProductID: msg.ProductID, DeviceName: msg.DeviceName})
 	if err != nil {
 		return errors.Database.AddDetail(err)
 	}
@@ -73,7 +73,7 @@ func (l *ThingLogic) DeviceResp(msg *deviceMsg.PublishMsg, err error, data any) 
 		Data: data,
 	}
 	if msg.ProtocolCode == "" {
-		msg.ProtocolCode = def.ProtocolCodeIThings
+		msg.ProtocolCode = def.ProtocolCodeUnitedRhino
 	}
 	return &deviceMsg.PublishMsg{
 		Handle:       msg.Handle,
@@ -138,7 +138,7 @@ func (l *ThingLogic) HandlePackReport(msg *deviceMsg.PublishMsg, req msgThing.Re
 					l.Error(err)
 				}
 			}
-			schema, err := l.svcCtx.SchemaRepo.GetData(l.ctx, dev.ProductID)
+			schema, err := l.svcCtx.SchemaRepo.GetData(l.ctx, devices.Core{ProductID: dev.ProductID, DeviceName: dev.DeviceName})
 			if err != nil {
 				return l.DeviceResp(msg, err, nil), err
 			}
@@ -218,7 +218,7 @@ func (l *ThingLogic) InsertPackReport(msg *deviceMsg.PublishMsg, t *schema.Model
 		})
 
 		//插入多条设备物模型属性数据
-		err = l.repo.InsertPropertiesData(l.ctx, t, device.ProductID, device.DeviceName, tp.Params, timeStamp)
+		err = l.repo.InsertPropertiesData(l.ctx, t, device.ProductID, device.DeviceName, tp.Params, timeStamp, msgThing.Optional{})
 		if err != nil {
 			l.Errorf("%s.InsertPropertyData err=%+v", utils.FuncName(), err)
 			return err
@@ -322,7 +322,7 @@ func (l *ThingLogic) HandlePropertyReport(msg *deviceMsg.PublishMsg, req msgThin
 	})
 
 	//插入多条设备物模型属性数据
-	err = l.repo.InsertPropertiesData(l.ctx, l.schema, msg.ProductID, msg.DeviceName, tp, timeStamp)
+	err = l.repo.InsertPropertiesData(l.ctx, l.schema, msg.ProductID, msg.DeviceName, tp, timeStamp, msgThing.Optional{})
 	if err != nil {
 		l.Errorf("%s.InsertPropertyData err=%+v", utils.FuncName(), err)
 		return l.DeviceResp(msg, errors.Database.AddDetail(err), nil), err
@@ -441,6 +441,10 @@ func OtaVersionCheck(ctx context.Context, svcCtx *svc.ServiceContext, msg device
 	return
 }
 
+func (l *ThingLogic) HandlePropertyGetSchema(msg *deviceMsg.PublishMsg) (respMsg *deviceMsg.PublishMsg, err error) {
+	return l.DeviceResp(msg, errors.OK, l.schema.ToSimple()), nil
+}
+
 // 设备请求获取 云端记录的最新设备信息
 func (l *ThingLogic) HandlePropertyGetStatus(msg *deviceMsg.PublishMsg) (respMsg *deviceMsg.PublishMsg, err error) {
 	respData := make(map[string]any, len(l.schema.Property))
@@ -460,7 +464,7 @@ func (l *ThingLogic) HandlePropertyGetStatus(msg *deviceMsg.PublishMsg) (respMsg
 		}
 		if len(shadows) != 0 {
 			//插入多条设备物模型属性数据
-			err = l.repo.InsertPropertiesData(l.ctx, l.schema, msg.ProductID, msg.DeviceName, shadow.ToValues(shadows, l.schema.Property), time.Now())
+			err = l.repo.InsertPropertiesData(l.ctx, l.schema, msg.ProductID, msg.DeviceName, shadow.ToValues(shadows, l.schema.Property), time.Now(), msgThing.Optional{Sync: true})
 			if err != nil {
 				l.Errorf("%s.InsertPropertyData err=%+v", utils.FuncName(), err)
 				return l.DeviceResp(msg, errors.Database.AddDetail(err), nil), err
@@ -535,6 +539,8 @@ func (l *ThingLogic) HandleProperty(msg *deviceMsg.PublishMsg) (respMsg *deviceM
 		return l.HandlePropertyReportInfo(msg, l.dreq)
 	case deviceMsg.GetStatus: //设备请求获取 云端记录的最新设备信息
 		return l.HandlePropertyGetStatus(msg)
+	case deviceMsg.GetSchema:
+		return l.HandlePropertyGetSchema(msg)
 	case deviceMsg.ControlReply: //设备响应的 “云端下发控制指令” 的处理结果
 		return l.HandleControl(msg)
 	default:

@@ -3,19 +3,19 @@ package deviceinteractlogic
 import (
 	"context"
 	"encoding/json"
-	"gitee.com/i-Things/share/def"
-	"gitee.com/i-Things/share/devices"
-	"gitee.com/i-Things/share/domain/deviceMsg"
-	"gitee.com/i-Things/share/domain/deviceMsg/msgThing"
-	"gitee.com/i-Things/share/domain/schema"
-	"gitee.com/i-Things/share/errors"
-	"gitee.com/i-Things/share/utils"
-	"gitee.com/i-Things/things/service/dmsvr/internal/logic"
-	"gitee.com/i-Things/things/service/dmsvr/internal/repo/cache"
+	"gitee.com/unitedrhino/share/def"
+	"gitee.com/unitedrhino/share/devices"
+	"gitee.com/unitedrhino/share/domain/deviceMsg"
+	"gitee.com/unitedrhino/share/domain/deviceMsg/msgThing"
+	"gitee.com/unitedrhino/share/domain/schema"
+	"gitee.com/unitedrhino/share/errors"
+	"gitee.com/unitedrhino/share/utils"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/logic"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/repo/cache"
 	"time"
 
-	"gitee.com/i-Things/things/service/dmsvr/internal/svc"
-	"gitee.com/i-Things/things/service/dmsvr/pb/dm"
+	"gitee.com/unitedrhino/things/service/dmsvr/internal/svc"
+	"gitee.com/unitedrhino/things/service/dmsvr/pb/dm"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -34,9 +34,9 @@ func NewPropertyGetReportSendLogic(ctx context.Context, svcCtx *svc.ServiceConte
 		Logger: logx.WithContext(ctx),
 	}
 }
-func (l *PropertyGetReportSendLogic) initMsg(productID string) error {
+func (l *PropertyGetReportSendLogic) initMsg(dev devices.Core) error {
 	var err error
-	l.schema, err = l.svcCtx.SchemaRepo.GetData(l.ctx, productID)
+	l.schema, err = l.svcCtx.SchemaRepo.GetData(l.ctx, dev)
 	if err != nil {
 		return errors.System.AddDetail(err)
 	}
@@ -61,7 +61,7 @@ func (l *PropertyGetReportSendLogic) PropertyGetReportSend(in *dm.PropertyGetRep
 		return nil, err
 	}
 
-	err = l.initMsg(in.ProductID)
+	err = l.initMsg(devices.Core{ProductID: in.ProductID, DeviceName: in.DeviceName})
 	if err != nil {
 		return nil, err
 	}
